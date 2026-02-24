@@ -1,0 +1,42 @@
+<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="56" y1="456" x2="456" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#60a5fa"/>
+      <stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square frame -->
+  <rect x="72" y="72" width="368" height="368" rx="60" fill="url(#g)" opacity="0.12"/>
+  <rect x="72" y="72" width="368" height="368" rx="60" stroke="url(#g)" stroke-width="6" fill="none" opacity="0.35"/>
+
+  <!-- Central Claude sparkle -->
+  <g transform="translate(256, 256)">
+    <rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g)"/>
+    <rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g)" transform="rotate(60)"/>
+    <rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g)" transform="rotate(120)"/>
+  </g>
+
+  <!-- Sparkle glow -->
+  <circle cx="256" cy="256" r="72" fill="url(#g)" opacity="0.06"/>
+
+  <!-- Cardinal traces -->
+  <line x1="256" y1="186" x2="256" y2="72" stroke="url(#g)" stroke-width="10" stroke-linecap="round" opacity="0.75"/>
+  <rect x="242" y="60" width="28" height="28" rx="6" fill="url(#g)" opacity="0.75"/>
+  <line x1="326" y1="256" x2="440" y2="256" stroke="url(#g)" stroke-width="10" stroke-linecap="round" opacity="0.75"/>
+  <rect x="426" y="242" width="28" height="28" rx="6" fill="url(#g)" opacity="0.75"/>
+  <line x1="256" y1="326" x2="256" y2="440" stroke="url(#g)" stroke-width="10" stroke-linecap="round" opacity="0.75"/>
+  <rect x="242" y="426" width="28" height="28" rx="6" fill="url(#g)" opacity="0.75"/>
+  <line x1="186" y1="256" x2="72" y2="256" stroke="url(#g)" stroke-width="10" stroke-linecap="round" opacity="0.75"/>
+  <rect x="58" y="242" width="28" height="28" rx="6" fill="url(#g)" opacity="0.75"/>
+
+  <!-- Diagonal L-routes -->
+  <path d="M 292 218 L 292 148 L 392 148" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/>
+  <rect x="382" y="138" width="22" height="22" rx="5" fill="url(#g)" opacity="0.55"/>
+  <path d="M 218 218 L 148 218 L 148 130" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/>
+  <rect x="137" y="116" width="22" height="22" rx="5" fill="url(#g)" opacity="0.55"/>
+  <path d="M 292 294 L 364 294 L 364 382" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/>
+  <rect x="353" y="374" width="22" height="22" rx="5" fill="url(#g)" opacity="0.55"/>
+  <path d="M 218 294 L 218 364 L 130 364" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/>
+  <rect x="116" y="353" width="22" height="22" rx="5" fill="url(#g)" opacity="0.55"/>
+</svg>

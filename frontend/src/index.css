@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ── Custom Titlebar ── */
+.titlebar {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  min-height: 36px;
+  background: #18181b; /* zinc-900 */
+  border-bottom: 1px solid #27272a; /* zinc-800 */
+  user-select: none;
+}
+
+.titlebar-drag {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-left: 14px;
+  --wails-draggable: drag;
+}
+
+.titlebar-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a1a1aa; /* zinc-400 */
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.titlebar-controls {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.titlebar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: #a1a1aa; /* zinc-400 */
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  outline: none;
+}
+
+.titlebar-btn-default:hover {
+  background: #27272a; /* zinc-800 */
+  color: #f4f4f5; /* zinc-100 */
+}
+
+.titlebar-btn-close:hover {
+  background: #dc2626; /* red-600 */
+  color: #ffffff;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
