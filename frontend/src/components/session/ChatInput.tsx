@@ -15,9 +15,10 @@ interface ChatInputProps {
   taskId: string
   onListFiles?: () => Promise<string[]>
   onSlashCommand?: (command: string) => void
+  placeholder?: string
 }
 
-export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFiles, onSlashCommand }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFiles, onSlashCommand, placeholder }: ChatInputProps) {
   const [message, setMessage] = useState('')
   const [mode, setMode] = useState<ChatMode>('code')
   const [showModeMenu, setShowModeMenu] = useState(false)
@@ -127,14 +128,14 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
     : fileList.slice(0, 50)
 
   return (
-    <div className="border-t border-zinc-800 bg-zinc-900/80">
+    <div className="border-t border-white/[0.06] bg-[#111114]/80">
       {/* Attachments */}
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-1.5 px-3 pt-2">
           {attachments.map((file) => (
             <span
               key={file}
-              className="inline-flex items-center gap-1 px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[10px] text-zinc-400"
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/[0.06] border border-white/[0.08] rounded text-[10px] text-zinc-400"
             >
               <FileText size={10} />
               <span className="max-w-[150px] truncate">{file}</span>
@@ -148,12 +149,12 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
 
       {/* Slash command menu */}
       {showSlashMenu && (
-        <div className="mx-3 mt-2 bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden">
+        <div className="mx-3 mt-2 bg-[#111114] border border-white/[0.08] rounded-xl overflow-hidden">
           {slashCommands.map((sc) => (
             <button
               key={sc.cmd}
               onClick={() => handleSlashCommand(sc.cmd)}
-              className="w-full flex items-center gap-3 px-3 py-2 hover:bg-zinc-700 text-left transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/[0.06] text-left transition-colors"
             >
               <span className="text-xs font-mono text-zinc-200">{sc.cmd}</span>
               <span className="text-xs text-zinc-500">{sc.desc}</span>
@@ -164,12 +165,12 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
 
       {/* File picker */}
       {showFilePicker && (
-        <div ref={filePickerRef} className="mx-3 mt-2 bg-zinc-800 border border-zinc-700 rounded-lg max-h-48 overflow-hidden flex flex-col">
+        <div ref={filePickerRef} className="mx-3 mt-2 bg-[#111114] border border-white/[0.08] rounded-xl max-h-48 overflow-hidden flex flex-col">
           <input
             value={fileFilter}
             onChange={(e) => setFileFilter(e.target.value)}
             placeholder="Search files..."
-            className="px-3 py-1.5 bg-transparent border-b border-zinc-700 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none"
+            className="px-3 py-1.5 bg-transparent border-b border-white/[0.06] text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none"
             autoFocus
           />
           <div className="overflow-auto">
@@ -177,7 +178,7 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
               <button
                 key={file}
                 onClick={() => selectFile(file)}
-                className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-700 text-left transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-white/[0.06] text-left transition-colors"
               >
                 <FileText size={12} className="text-zinc-500 flex-shrink-0" />
                 <span className="text-xs text-zinc-300 truncate">{file}</span>
@@ -198,15 +199,15 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
             value={message}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={disabled ? disabledReason || 'Waiting...' : 'Type a message... (@ for files, / for commands)'}
+            placeholder={disabled ? disabledReason || 'Waiting...' : placeholder || 'Type a message... (@ for files, / for commands)'}
             disabled={disabled}
             rows={1}
-            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 input-focus resize-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           />
           <button
             onClick={handleSend}
             disabled={disabled || !message.trim()}
-            className="p-2 bg-zinc-100 hover:bg-white text-zinc-900 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+            className="p-2 bg-brand-gradient hover:opacity-90 text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-brand-sm flex-shrink-0"
           >
             <Send size={16} />
           </button>
@@ -218,19 +219,19 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
           <div className="relative">
             <button
               onClick={() => setShowModeMenu(!showModeMenu)}
-              className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] hover:bg-zinc-800 transition-colors"
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] hover:bg-white/[0.06] transition-colors"
             >
               <span className={modeLabels[mode].color}>{modeLabels[mode].label}</span>
               <ChevronDown size={10} className="text-zinc-500" />
             </button>
             {showModeMenu && (
-              <div className="absolute bottom-full left-0 mb-1 bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden shadow-lg z-10 min-w-[140px]">
+              <div className="absolute bottom-full left-0 mb-1 bg-[#111114] border border-white/[0.08] rounded-xl overflow-hidden shadow-lg z-10 min-w-[140px]">
                 {(Object.keys(modeLabels) as ChatMode[]).map((m) => (
                   <button
                     key={m}
                     onClick={() => { setMode(m); setShowModeMenu(false) }}
-                    className={`w-full flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-700 text-left transition-colors ${
-                      mode === m ? 'bg-zinc-700/50' : ''
+                    className={`w-full flex items-center gap-2 px-3 py-1.5 hover:bg-white/[0.06] text-left transition-colors ${
+                      mode === m ? 'bg-white/[0.04]' : ''
                     }`}
                   >
                     <span className={`text-xs font-medium ${modeLabels[m].color}`}>{modeLabels[m].label}</span>
@@ -244,7 +245,7 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
           {/* File attach button */}
           <button
             onClick={openFilePicker}
-            className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] transition-colors"
             title="Attach file (@)"
           >
             <Paperclip size={11} />
@@ -254,7 +255,7 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
           {/* Slash command button */}
           <button
             onClick={() => { setMessage('/'); setShowSlashMenu(true); textareaRef.current?.focus() }}
-            className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] transition-colors"
             title="Commands (/)"
           >
             <Slash size={11} />

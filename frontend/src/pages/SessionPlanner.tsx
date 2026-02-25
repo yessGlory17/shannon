@@ -216,30 +216,30 @@ export function SessionPlanner() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/sessions')}
-            className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] transition-colors"
           >
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-xl font-semibold text-zinc-100">
+            <h1 className="text-xl font-bold font-display text-zinc-100">
               {currentSession?.name || 'Session Planner'}
             </h1>
             <p className="text-xs text-zinc-500 mt-0.5">
-              {project?.name || 'Unknown project'} &middot; {tasks.length} tasks
+              {project?.name || 'Unknown workspace'} &middot; {tasks.length} tasks
             </p>
           </div>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowPlanner(true)}
-            className="flex items-center gap-2 px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-600/30 text-sm rounded-md transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 text-sm rounded-lg transition-colors"
           >
             <Wand2 size={14} />
             AI Planner
           </button>
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm rounded-md transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-white/[0.06] hover:bg-white/[0.10] text-zinc-200 text-sm rounded-lg transition-colors"
           >
             <Plus size={14} />
             Add Task
@@ -247,7 +247,7 @@ export function SessionPlanner() {
           {isExecuting ? (
             <button
               onClick={() => navigate(`/workspace/${sessionID}`)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-md transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
             >
               <Play size={14} />
               Open Workspace
@@ -256,7 +256,7 @@ export function SessionPlanner() {
             tasks.length > 0 && (
               <button
                 onClick={handleStartWorking}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-md transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
               >
                 <Play size={14} />
                 Start Working
@@ -268,7 +268,7 @@ export function SessionPlanner() {
 
       {/* AI Planner Dialog */}
       {showPlanner && (
-        <div className="bg-zinc-900 border border-purple-600/30 rounded-lg p-5 mb-5">
+        <div className="rounded-xl bg-[#111114] border border-purple-500/20 shadow-card p-5 mb-5">
           <div className="flex items-center gap-2 mb-4">
             <Wand2 size={16} className="text-purple-400" />
             <h2 className="text-sm font-medium text-purple-300">AI Task Planner</h2>
@@ -276,27 +276,27 @@ export function SessionPlanner() {
           {proposedTasks.length === 0 ? (
             <>
               <p className="text-xs text-zinc-500 mb-3">
-                Describe your goal and the AI will analyze the project and propose a task breakdown.
+                Describe your goal and the AI will analyze the workspace and propose a task breakdown.
               </p>
               <textarea
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
                 placeholder="e.g. Add JWT authentication with login and registration endpoints, middleware protection, and unit tests"
                 rows={3}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-purple-600/50 resize-none"
+                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 input-focus resize-none transition-colors"
               />
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={handlePlan}
                   disabled={planning || !goal.trim()}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {planning ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
                   {planning ? 'Analyzing...' : 'Generate Plan'}
                 </button>
                 <button
                   onClick={() => { setShowPlanner(false); setGoal('') }}
-                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm rounded-md transition-colors"
+                  className="px-4 py-2 bg-white/[0.06] hover:bg-white/[0.10] text-zinc-300 text-sm rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -305,13 +305,13 @@ export function SessionPlanner() {
           ) : (
             <>
               {planSummary && (
-                <p className="text-sm text-zinc-300 mb-4 bg-zinc-800/50 px-3 py-2 rounded-md">
+                <p className="text-sm text-zinc-300 mb-4 bg-white/[0.03] px-3 py-2 rounded-lg">
                   {planSummary}
                 </p>
               )}
               <div className="space-y-2 mb-4">
                 {proposedTasks.map((pt, i) => (
-                  <div key={i} className="bg-zinc-800 border border-zinc-700 rounded-md p-3">
+                  <div key={i} className="bg-white/[0.04] border border-white/[0.06] rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs text-zinc-600 font-mono w-5">{i + 1}.</span>
                       <span className="text-sm font-medium text-zinc-200">{pt.title}</span>
@@ -328,19 +328,19 @@ export function SessionPlanner() {
               <div className="flex gap-2">
                 <button
                   onClick={handleAcceptPlan}
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-md transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
                 >
                   Accept & Create Tasks
                 </button>
                 <button
                   onClick={() => { setProposedTasks([]); setPlanSummary('') }}
-                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm rounded-md transition-colors"
+                  className="px-4 py-2 bg-white/[0.06] hover:bg-white/[0.10] text-zinc-300 text-sm rounded-lg transition-colors"
                 >
                   Re-plan
                 </button>
                 <button
                   onClick={() => { setShowPlanner(false); setProposedTasks([]); setPlanSummary(''); setGoal('') }}
-                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm rounded-md transition-colors"
+                  className="px-4 py-2 bg-white/[0.06] hover:bg-white/[0.10] text-zinc-300 text-sm rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -352,37 +352,37 @@ export function SessionPlanner() {
 
       {/* Task form */}
       {showForm && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5 mb-5">
-          <h2 className="text-sm font-medium text-zinc-200 mb-4">
+        <div className="rounded-xl bg-[#111114] border border-white/[0.06] shadow-card p-5 mb-5">
+          <h2 className="text-sm font-medium text-zinc-300 mb-4">
             {editingTask ? 'Edit Task' : 'New Task'}
           </h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs text-zinc-400 mb-1.5">Title</label>
+              <label className="block text-xs text-zinc-500 font-medium mb-1.5">Title</label>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Implement login API"
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 input-focus transition-colors"
               />
             </div>
             <div>
-              <label className="block text-xs text-zinc-400 mb-1.5">Prompt</label>
+              <label className="block text-xs text-zinc-500 font-medium mb-1.5">Prompt</label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Detailed instructions for the agent..."
                 rows={4}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 resize-none"
+                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 input-focus resize-none transition-colors"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-zinc-400 mb-1.5">Assign To</label>
+                <label className="block text-xs text-zinc-500 font-medium mb-1.5">Assign To</label>
                 <select
                   value={getAssignmentValue()}
                   onChange={(e) => handleAssignmentChange(e.target.value)}
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"
+                  className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 input-focus transition-colors"
                 >
                   <option value="">Auto-assign</option>
                   {agents.length > 0 && (
@@ -404,7 +404,7 @@ export function SessionPlanner() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-zinc-400 mb-1.5">Dependencies</label>
+                <label className="block text-xs text-zinc-500 font-medium mb-1.5">Dependencies</label>
                 <div className="space-y-1 max-h-24 overflow-auto">
                   {tasks.filter((t) => t.id !== editingTask?.id).map((t) => (
                     <label key={t.id} className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
@@ -412,7 +412,7 @@ export function SessionPlanner() {
                         type="checkbox"
                         checked={deps.includes(t.id)}
                         onChange={() => toggleDep(t.id)}
-                        className="rounded border-zinc-700 bg-zinc-800 text-emerald-500"
+                        className="rounded border-white/[0.08] bg-white/[0.04] text-brand-blue"
                       />
                       {t.title}
                     </label>
@@ -427,13 +427,13 @@ export function SessionPlanner() {
               <button
                 onClick={handleCreateTask}
                 disabled={!title.trim() || !prompt.trim()}
-                className="px-4 py-2 bg-zinc-100 hover:bg-white text-zinc-900 text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-brand-sm"
               >
                 {editingTask ? 'Update' : 'Add Task'}
               </button>
               <button
                 onClick={resetForm}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm rounded-md transition-colors"
+                className="px-4 py-2 bg-white/[0.06] hover:bg-white/[0.10] text-zinc-300 text-sm rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -446,7 +446,7 @@ export function SessionPlanner() {
       <div className="flex-1 overflow-auto">
         {tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-full bg-white/[0.06] flex items-center justify-center mb-4">
               <Plus size={20} className="text-zinc-600" />
             </div>
             <p className="text-sm text-zinc-500 mb-1">No tasks yet</p>
@@ -456,14 +456,14 @@ export function SessionPlanner() {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowPlanner(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-600/30 text-xs rounded-md transition-colors"
+                className="flex items-center gap-2 px-3 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 text-xs rounded-lg transition-colors"
               >
                 <Wand2 size={12} />
                 AI Planner
               </button>
               <button
                 onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-md transition-colors"
+                className="flex items-center gap-2 px-3 py-2 bg-white/[0.06] hover:bg-white/[0.10] text-zinc-300 text-xs rounded-lg transition-colors"
               >
                 <Plus size={12} />
                 Manual
@@ -481,7 +481,7 @@ export function SessionPlanner() {
               return (
                 <div
                   key={task.id}
-                  className="bg-zinc-900 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-colors"
+                  className="rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card transition-all duration-200"
                 >
                   <div className="flex items-center gap-3 px-4 py-3">
                     <GripVertical size={14} className="text-zinc-700 flex-shrink-0" />
@@ -503,26 +503,26 @@ export function SessionPlanner() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setExpandedTask(isExpanded ? null : task.id)}
-                        className="p-1.5 rounded text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                        className="p-1.5 rounded text-zinc-600 hover:text-zinc-300 hover:bg-white/[0.06] transition-colors"
                       >
                         {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                       </button>
                       <button
                         onClick={() => handleEditTask(task)}
-                        className="px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                        className="px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] rounded transition-colors"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDeleteTask(task.id)}
-                        className="p-1.5 rounded text-zinc-600 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                        className="p-1.5 rounded text-zinc-600 hover:text-red-400 hover:bg-white/[0.06] transition-colors"
                       >
                         <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
                   {isExpanded && (
-                    <div className="px-4 pb-3 border-t border-zinc-800/50 pt-3 ml-12">
+                    <div className="px-4 pb-3 border-t border-white/[0.04] pt-3 ml-12">
                       <p className="text-xs text-zinc-400 whitespace-pre-wrap">{task.prompt}</p>
                     </div>
                   )}

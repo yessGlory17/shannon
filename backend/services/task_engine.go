@@ -101,6 +101,7 @@ func (te *TaskEngine) StartSession(sessionID string) error {
 }
 
 // StopSession cancels all running tasks in a session.
+// If all tasks are already completed/failed, the session is marked as completed.
 func (te *TaskEngine) StopSession(sessionID string) error {
 	te.mu.Lock()
 	cancel, ok := te.cancelFuncs[sessionID]
@@ -112,19 +113,68 @@ func (te *TaskEngine) StopSession(sessionID string) error {
 
 	cancel()
 
-	// Cancel all running tasks
+	// Check task states and cancel any that are still active
 	tasks, _ := te.tasks.ListBySession(sessionID)
+	hasActive := false
+	hasFailed := false
 	for _, task := range tasks {
-		if task.Status == models.TaskStatusRunning {
+		switch task.Status {
+		case models.TaskStatusRunning:
 			te.runner.StopTask(task.ID)
 			te.tasks.UpdateStatus(task.ID, models.TaskStatusCancelled)
-		} else if task.Status == models.TaskStatusQueued {
+			hasActive = true
+		case models.TaskStatusQueued, models.TaskStatusAwaitingInput:
 			te.tasks.UpdateStatus(task.ID, models.TaskStatusCancelled)
+			hasActive = true
+		case models.TaskStatusPending:
+			te.tasks.UpdateStatus(task.ID, models.TaskStatusCancelled)
+			hasActive = true
+		case models.TaskStatusFailed:
+			hasFailed = true
 		}
 	}
 
-	te.sessions.UpdateStatus(sessionID, models.SessionStatusFailed)
-	te.emitSessionStatus(sessionID, "cancelled")
+	// If no tasks were actively running, this is a graceful completion
+	if !hasActive {
+		status := models.SessionStatusCompleted
+		if hasFailed {
+			status = models.SessionStatusFailed
+		}
+		te.sessions.UpdateStatus(sessionID, status)
+		te.emitSessionStatus(sessionID, string(status))
+	} else {
+		te.sessions.UpdateStatus(sessionID, models.SessionStatusFailed)
+		te.emitSessionStatus(sessionID, "cancelled")
+	}
+	return nil
+}
+
+// CompleteSession gracefully ends a session, marking it as completed.
+// Use this when all tasks are done and the user wants to finalize the session.
+func (te *TaskEngine) CompleteSession(sessionID string) error {
+	te.mu.Lock()
+	cancel, ok := te.cancelFuncs[sessionID]
+	te.mu.Unlock()
+
+	if ok {
+		cancel()
+	}
+
+	tasks, _ := te.tasks.ListBySession(sessionID)
+	hasFailed := false
+	for _, task := range tasks {
+		if task.Status == models.TaskStatusFailed {
+			hasFailed = true
+			break
+		}
+	}
+
+	status := models.SessionStatusCompleted
+	if hasFailed {
+		status = models.SessionStatusFailed
+	}
+	te.sessions.UpdateStatus(sessionID, status)
+	te.emitSessionStatus(sessionID, string(status))
 	return nil
 }
 
@@ -164,26 +214,21 @@ func (te *TaskEngine) executeSession(ctx context.Context, sessionID string, proj
 			return
 		}
 
-		// Check if all done
+		// Check if all done (no pending/queued/running tasks)
 		allDone := true
-		anyFailed := false
 		for _, t := range tasks {
 			switch t.Status {
 			case models.TaskStatusPending, models.TaskStatusQueued, models.TaskStatusRunning:
 				allDone = false
-			case models.TaskStatusFailed:
-				anyFailed = true
 			}
 		}
 
 		if allDone {
-			status := models.SessionStatusCompleted
-			if anyFailed {
-				status = models.SessionStatusFailed
-			}
-			te.sessions.UpdateStatus(sessionID, status)
-			te.emitSessionStatus(sessionID, string(status))
-			return
+			// All tasks finished — keep session alive for follow-up interactions.
+			// The session stays "running" until the user explicitly stops or completes it.
+			// This allows sending follow-up messages to individual tasks.
+			time.Sleep(2 * time.Second)
+			continue
 		}
 
 		// Find tasks ready to run (pending with all deps completed)
@@ -267,17 +312,21 @@ func (te *TaskEngine) executeTask(ctx context.Context, task *models.Task, projec
 		log.Printf("task %s: warning: failed to inject .mcp.json: %v", task.ID, err)
 	}
 
-	// Run project setup command if configured
-	if project.SetupCommand != "" {
-		log.Printf("task %s: running setup command: %s", task.ID, project.SetupCommand)
+	// Run project setup commands if configured
+	for i, cmd := range project.SetupCommands {
+		cmd = strings.TrimSpace(cmd)
+		if cmd == "" {
+			continue
+		}
+		log.Printf("task %s: running setup command [%d/%d]: %s", task.ID, i+1, len(project.SetupCommands), cmd)
 		if te.wailsCtx != nil {
 			wailsRuntime.EventsEmit(te.wailsCtx, "task:stream", map[string]any{
 				"task_id": task.ID,
 				"type":    "init",
-				"content": fmt.Sprintf("Running setup command: %s", project.SetupCommand),
+				"content": fmt.Sprintf("Running setup command [%d/%d]: %s", i+1, len(project.SetupCommands), cmd),
 			})
 		}
-		setupCmd := exec.Command("sh", "-c", project.SetupCommand)
+		setupCmd := exec.Command("sh", "-c", cmd)
 		setupCmd.Dir = workDir
 		setupCmd.Env = append(os.Environ(),
 			"WORKSPACE_PATH="+workDir,
@@ -286,17 +335,17 @@ func (te *TaskEngine) executeTask(ctx context.Context, task *models.Task, projec
 			"SESSION_ID="+task.SessionID,
 		)
 		if output, setupErr := setupCmd.CombinedOutput(); setupErr != nil {
-			log.Printf("task %s: setup command failed: %v\nOutput: %s", task.ID, setupErr, string(output))
+			log.Printf("task %s: setup command [%d] failed: %v\nOutput: %s", task.ID, i+1, setupErr, string(output))
 			if te.wailsCtx != nil {
 				wailsRuntime.EventsEmit(te.wailsCtx, "task:stream", map[string]any{
 					"task_id": task.ID,
 					"type":    "error",
-					"content": fmt.Sprintf("Setup command failed: %v\n%s", setupErr, string(output)),
+					"content": fmt.Sprintf("Setup command [%d] failed: %v\n%s", i+1, setupErr, string(output)),
 				})
 			}
 			// Don't fail the task — setup command failure is a warning
 		} else {
-			log.Printf("task %s: setup command completed successfully", task.ID)
+			log.Printf("task %s: setup command [%d] completed successfully", task.ID, i+1)
 			if te.wailsCtx != nil && len(output) > 0 {
 				wailsRuntime.EventsEmit(te.wailsCtx, "task:stream", map[string]any{
 					"task_id": task.ID,
@@ -325,7 +374,7 @@ func (te *TaskEngine) executeTask(ctx context.Context, task *models.Task, projec
 		return
 	}
 	log.Printf("task %s: starting claude (agent=%s, model=%s, prompt_len=%d, workdir=%s)", task.ID, agent.Name, agent.Model, len(task.Prompt), workDir)
-	runErr := te.runner.RunTask(ctx, task, agent, workDir, RunTaskOptions{
+	runResult, runErr := te.runner.RunTask(ctx, task, agent, workDir, RunTaskOptions{
 		OnSessionID: func(sessionID string) {
 			log.Printf("task %s: captured claude session_id: %s", task.ID, sessionID)
 			task.ClaudeSessionID = sessionID
@@ -393,6 +442,12 @@ func (te *TaskEngine) executeTask(ctx context.Context, task *models.Task, projec
 	if runErr != nil {
 		task.Status = models.TaskStatusFailed
 		task.Error = runErr.Error()
+	} else if runResult != nil && runResult.NeedsInput {
+		// Agent is asking for user input — mark as awaiting_input
+		task.Status = models.TaskStatusAwaitingInput
+		task.PendingInputData = runResult.LastText
+		task.CompletedAt = nil // not truly completed yet
+		log.Printf("task %s: agent needs user input, marking as awaiting_input", task.ID)
 	} else {
 		task.Status = models.TaskStatusCompleted
 		task.ExitCode = 0
@@ -590,6 +645,8 @@ func (te *TaskEngine) diffHash(result *DiffResult) string {
 // injectMCPConfig writes a .mcp.json file into the workspace directory
 // based on the agent's configured MCP server IDs. Claude Code reads this
 // file at startup to discover available MCP servers.
+// It also appends MCP tool permission patterns (mcp__<serverKey>__*) to the
+// agent's AllowedTools so the CLI doesn't block MCP tool usage.
 func (te *TaskEngine) injectMCPConfig(agent *models.Agent, workDir string) error {
 	if len(agent.MCPServerIDs) == 0 {
 		return nil
@@ -647,6 +704,25 @@ func (te *TaskEngine) injectMCPConfig(agent *models.Agent, workDir string) error
 		return fmt.Errorf("write .mcp.json: %w", err)
 	}
 
+	// Add MCP tool patterns to agent's AllowedTools so --allowedTools
+	// doesn't block MCP tool usage. Pattern: mcp__<serverKey>__*
+	if len(agent.AllowedTools) > 0 {
+		for serverKey := range mcpConfig.MCPServers {
+			pattern := fmt.Sprintf("mcp__%s__*", serverKey)
+			// Check if already present
+			found := false
+			for _, t := range agent.AllowedTools {
+				if t == pattern {
+					found = true
+					break
+				}
+			}
+			if !found {
+				agent.AllowedTools = append(agent.AllowedTools, pattern)
+			}
+		}
+	}
+
 	log.Printf("task: injected .mcp.json with %d server(s) into %s", len(mcpConfig.MCPServers), workDir)
 	return nil
 }
@@ -701,17 +777,22 @@ func (te *TaskEngine) SendFollowUp(taskID string, message string, mode string) e
 	task.Status = models.TaskStatusRunning
 	task.StartedAt = &now
 	task.Error = ""
-	te.tasks.Update(task)
+	task.PendingInputData = ""
+	if err := te.tasks.Update(task); err != nil {
+		return fmt.Errorf("failed to update task status: %w", err)
+	}
 	te.emitTaskStatus(task.ID, "running")
+	log.Printf("task %s: follow-up started (session=%s, prompt_len=%d)", task.ID, task.ClaudeSessionID, len(message))
 
 	// Run follow-up in background
 	go func() {
-		runErr := te.runner.RunTask(context.Background(), task, &agentCopy, workDir, RunTaskOptions{
+		runResult, runErr := te.runner.RunTask(context.Background(), task, &agentCopy, workDir, RunTaskOptions{
 			SessionID: task.ClaudeSessionID,
 			Prompt:    message,
 			OnSessionID: func(sessionID string) {
 				// Update session ID if it changed
 				if sessionID != task.ClaudeSessionID {
+					log.Printf("task %s: follow-up session ID changed: %s -> %s", task.ID, task.ClaudeSessionID, sessionID)
 					task.ClaudeSessionID = sessionID
 					te.tasks.Update(task)
 				}
@@ -722,13 +803,30 @@ func (te *TaskEngine) SendFollowUp(taskID string, message string, mode string) e
 		task.CompletedAt = &completedAt
 
 		if runErr != nil {
+			log.Printf("task %s: follow-up failed: %v", task.ID, runErr)
 			task.Status = models.TaskStatusFailed
 			task.Error = runErr.Error()
+			// Emit error as stream event so it shows in the UI
+			if te.wailsCtx != nil {
+				wailsRuntime.EventsEmit(te.wailsCtx, "task:stream", map[string]any{
+					"task_id": task.ID,
+					"type":    "error",
+					"content": fmt.Sprintf("Follow-up failed: %v", runErr),
+				})
+			}
+		} else if runResult != nil && runResult.NeedsInput {
+			task.Status = models.TaskStatusAwaitingInput
+			task.PendingInputData = runResult.LastText
+			task.CompletedAt = nil
+			log.Printf("task %s: follow-up needs user input, marking as awaiting_input", task.ID)
 		} else {
+			log.Printf("task %s: follow-up completed successfully", task.ID)
 			task.Status = models.TaskStatusCompleted
 		}
 
-		te.tasks.Update(task)
+		if err := te.tasks.Update(task); err != nil {
+			log.Printf("task %s: failed to update task after follow-up: %v", task.ID, err)
+		}
 		te.emitTaskStatus(task.ID, string(task.Status))
 	}()
 

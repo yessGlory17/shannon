@@ -106,7 +106,7 @@ export function TeamEditor() {
         id: `${te.source}-${te.target}`,
         source: te.source,
         target: te.target,
-        style: { stroke: '#52525b', strokeWidth: 2 },
+        style: { stroke: '#3f3f46', strokeWidth: 1.5 },
       }))
       setEdges(rfEdges)
     }
@@ -121,7 +121,7 @@ export function TeamEditor() {
     (connection: Connection) => {
       setEdges((eds) =>
         addEdge(
-          { ...connection, style: { stroke: '#52525b', strokeWidth: 2 } },
+          { ...connection, style: { stroke: '#3f3f46', strokeWidth: 1.5 } },
           eds
         )
       )
@@ -195,7 +195,7 @@ export function TeamEditor() {
             id: `${ordered[i].id}-${ordered[i + 1].id}`,
             source: ordered[i].id,
             target: ordered[i + 1].id,
-            style: { stroke: '#52525b', strokeWidth: 2 },
+            style: { stroke: '#3f3f46', strokeWidth: 1.5 },
           })
         }
         setEdges(chainEdges)
@@ -289,7 +289,7 @@ export function TeamEditor() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/teams')}
-            className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] transition-colors"
           >
             <ArrowLeft size={18} />
           </button>
@@ -297,7 +297,7 @@ export function TeamEditor() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Team name"
-            className="text-lg font-semibold text-zinc-100 bg-transparent border-b border-transparent hover:border-zinc-700 focus:border-zinc-500 focus:outline-none px-1 py-0.5 transition-colors"
+            className="text-lg font-bold font-display text-zinc-100 bg-transparent border-b border-transparent hover:border-white/[0.08] focus:border-brand-blue/50 focus:outline-none px-1 py-0.5 transition-colors"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -305,19 +305,19 @@ export function TeamEditor() {
           <div className="relative">
             <button
               onClick={() => setShowStrategyMenu(!showStrategyMenu)}
-              className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm rounded-md transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-white/[0.06] hover:bg-white/[0.10] text-zinc-200 text-sm rounded-lg transition-colors"
             >
               {currentStrategy.label}
               <ChevronDown size={14} className="text-zinc-500" />
             </button>
             {showStrategyMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden shadow-lg z-20 min-w-[200px]">
+              <div className="absolute right-0 top-full mt-1 bg-[#111114] border border-white/[0.08] rounded-xl overflow-hidden shadow-brand-lg z-20 min-w-[200px]">
                 {strategyOptions.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => applyStrategy(opt.value)}
-                    className={`w-full flex flex-col items-start px-3 py-2 hover:bg-zinc-700 text-left transition-colors ${
-                      strategy === opt.value ? 'bg-zinc-700/50' : ''
+                    className={`w-full flex flex-col items-start px-3 py-2 hover:bg-white/[0.06] text-left transition-colors ${
+                      strategy === opt.value ? 'bg-white/[0.04]' : ''
                     }`}
                   >
                     <span className="text-sm text-zinc-200">{opt.label}</span>
@@ -331,7 +331,7 @@ export function TeamEditor() {
           <button
             onClick={handleSave}
             disabled={!name.trim() || saving}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-100 hover:bg-white text-zinc-900 text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-brand-sm"
           >
             <Save size={14} />
             {saving ? 'Saving...' : 'Save'}
@@ -342,8 +342,8 @@ export function TeamEditor() {
       {/* Main: sidebar + canvas */}
       <div className="flex-1 flex gap-3 min-h-0">
         {/* Agent sidebar */}
-        <div className="w-48 flex-shrink-0 bg-zinc-900 border border-zinc-800 rounded-lg overflow-auto">
-          <div className="p-3 border-b border-zinc-800">
+        <div className="w-48 flex-shrink-0 rounded-xl bg-[#111114] border border-white/[0.06] overflow-auto">
+          <div className="p-3 border-b border-white/[0.06]">
             <h2 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Agents</h2>
             <p className="text-[10px] text-zinc-600 mt-0.5">Drag onto canvas</p>
           </div>
@@ -364,13 +364,13 @@ export function TeamEditor() {
                       e.dataTransfer.effectAllowed = 'move'
                     }}
                     onClick={() => !onCanvas && addAgentToCanvas(agent)}
-                    className={`flex items-center gap-2 px-2.5 py-2 rounded-md text-sm transition-colors ${
+                    className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-colors ${
                       onCanvas
-                        ? 'bg-zinc-800/50 text-zinc-600 cursor-default'
-                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 cursor-grab active:cursor-grabbing'
+                        ? 'bg-white/[0.03] text-zinc-600 cursor-default'
+                        : 'bg-white/[0.06] text-zinc-300 hover:bg-white/[0.10] cursor-grab active:cursor-grabbing'
                     }`}
                   >
-                    <Bot size={12} className={onCanvas ? 'text-zinc-700' : 'text-zinc-400'} />
+                    <Bot size={12} className={onCanvas ? 'text-zinc-700' : 'text-brand-blue'} />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">{agent.name}</p>
                       <p className="text-[10px] text-zinc-600">{agent.model}</p>
@@ -386,7 +386,7 @@ export function TeamEditor() {
         {/* Canvas */}
         <div
           ref={reactFlowWrapper}
-          className="flex-1 bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden"
+          className="flex-1 rounded-xl bg-[#111114] border border-white/[0.06] overflow-hidden"
           onDragOver={onDragOver}
           onDrop={onDrop}
         >
@@ -401,12 +401,12 @@ export function TeamEditor() {
             fitView
             fitViewOptions={{ padding: 0.4 }}
             proOptions={{ hideAttribution: true }}
-            className="bg-zinc-900"
+            className="bg-[#111114]"
             minZoom={0.3}
             maxZoom={2}
-            defaultEdgeOptions={{ style: { stroke: '#52525b', strokeWidth: 2 } }}
+            defaultEdgeOptions={{ style: { stroke: '#3f3f46', strokeWidth: 1.5 } }}
           >
-            <Background color="#27272a" gap={20} />
+            <Background color="#1f1f23" gap={20} />
           </ReactFlow>
           {nodes.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -424,7 +424,7 @@ export function TeamEditor() {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Team description (optional)"
-          className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 transition-colors"
+          className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-300 placeholder:text-zinc-600 input-focus transition-colors"
         />
       </div>
     </div>

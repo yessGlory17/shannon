@@ -14,16 +14,16 @@ export function ApplyTaskChanges(arg1) {
   return window['go']['main']['App']['ApplyTaskChanges'](arg1);
 }
 
-export function CheckProjectSetup(arg1) {
-  return window['go']['main']['App']['CheckProjectSetup'](arg1);
-}
-
 export function CleanupAllWorkspaces() {
   return window['go']['main']['App']['CleanupAllWorkspaces']();
 }
 
 export function CleanupSessionWorkspaces(arg1) {
   return window['go']['main']['App']['CleanupSessionWorkspaces'](arg1);
+}
+
+export function CompleteSession(arg1) {
+  return window['go']['main']['App']['CompleteSession'](arg1);
 }
 
 export function CreateAgent(arg1) {
@@ -74,6 +74,10 @@ export function DeleteTeam(arg1) {
   return window['go']['main']['App']['DeleteTeam'](arg1);
 }
 
+export function ExportMCPJson() {
+  return window['go']['main']['App']['ExportMCPJson']();
+}
+
 export function GetAgent(arg1) {
   return window['go']['main']['App']['GetAgent'](arg1);
 }
@@ -122,6 +126,10 @@ export function GetTeam(arg1) {
   return window['go']['main']['App']['GetTeam'](arg1);
 }
 
+export function ImportMCPFromClaude() {
+  return window['go']['main']['App']['ImportMCPFromClaude']();
+}
+
 export function ImprovePrompt(arg1, arg2, arg3) {
   return window['go']['main']['App']['ImprovePrompt'](arg1, arg2, arg3);
 }
@@ -158,6 +166,10 @@ export function ListTeams() {
   return window['go']['main']['App']['ListTeams']();
 }
 
+export function ParseMCPJson(arg1) {
+  return window['go']['main']['App']['ParseMCPJson'](arg1);
+}
+
 export function PlanTasks(arg1, arg2) {
   return window['go']['main']['App']['PlanTasks'](arg1, arg2);
 }
@@ -178,16 +190,16 @@ export function RejectTaskChanges(arg1) {
   return window['go']['main']['App']['RejectTaskChanges'](arg1);
 }
 
-export function RunProjectSetup(arg1, arg2) {
-  return window['go']['main']['App']['RunProjectSetup'](arg1, arg2);
-}
-
 export function SaveWorkspaceFile(arg1, arg2, arg3) {
   return window['go']['main']['App']['SaveWorkspaceFile'](arg1, arg2, arg3);
 }
 
 export function SearchMCPCatalog(arg1, arg2) {
   return window['go']['main']['App']['SearchMCPCatalog'](arg1, arg2);
+}
+
+export function SeedExampleAgents() {
+  return window['go']['main']['App']['SeedExampleAgents']();
 }
 
 export function SelectProjectFolder() {
@@ -208,6 +220,14 @@ export function StopSession(arg1) {
 
 export function StopTask(arg1) {
   return window['go']['main']['App']['StopTask'](arg1);
+}
+
+export function SyncMCPFromJson(arg1) {
+  return window['go']['main']['App']['SyncMCPFromJson'](arg1);
+}
+
+export function TestMCPServer(arg1, arg2, arg3) {
+  return window['go']['main']['App']['TestMCPServer'](arg1, arg2, arg3);
 }
 
 export function UpdateAgent(arg1) {

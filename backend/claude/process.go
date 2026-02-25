@@ -175,37 +175,38 @@ func buildArgs(opts ProcessOptions) []string {
 		"--verbose",
 	}
 
+	isResume := opts.SessionID != ""
+
 	// Resume an existing Claude conversation
-	if opts.SessionID != "" {
+	if isResume {
 		args = append(args, "--resume", opts.SessionID)
 	}
 
-	if opts.Model != "" {
-		args = append(args, "--model", opts.Model)
-	}
+	// Only set model and system prompt for new sessions.
+	// Resumed sessions already have these values from the original session;
+	// passing them again can cause CLI errors or unexpected behavior.
+	if !isResume {
+		if opts.Model != "" {
+			args = append(args, "--model", opts.Model)
+		}
 
-	if opts.SystemPrompt != "" {
-		args = append(args, "--system-prompt", opts.SystemPrompt)
-	}
+		if opts.SystemPrompt != "" {
+			args = append(args, "--system-prompt", opts.SystemPrompt)
+		}
 
-	if len(opts.AllowedTools) > 0 {
-		for _, tool := range opts.AllowedTools {
-			args = append(args, "--allowedTools", tool)
+		if len(opts.AllowedTools) > 0 {
+			for _, tool := range opts.AllowedTools {
+				args = append(args, "--allowedTools", tool)
+			}
 		}
 	}
 
-	switch opts.Permissions {
-	case "bypassPermissions":
-		args = append(args, "--dangerously-skip-permissions")
-	case "acceptEdits":
-		args = append(args, "--permission-mode", "acceptEdits")
-	case "default":
-		// use default permission mode
-	case "":
-		args = append(args, "--dangerously-skip-permissions")
-	default:
-		args = append(args, "--permission-mode", opts.Permissions)
-	}
+	// In -p (print/non-interactive) mode, stdin is closed so interactive
+	// permission approval is impossible. Always use --dangerously-skip-permissions
+	// to ensure all tools (Bash, Read, Write, Edit, etc.) can execute.
+	// Without this, modes like "acceptEdits" would silently reject Bash/Read
+	// calls since there's no stdin to approve them.
+	args = append(args, "--dangerously-skip-permissions")
 
 	// Prompt is the final positional argument.
 	// Use "--" to end option parsing so the prompt text isn't misread as a flag.

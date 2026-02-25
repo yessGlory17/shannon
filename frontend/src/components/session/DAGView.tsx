@@ -25,21 +25,17 @@ const nodeTypes: NodeTypes = {
 const NODE_WIDTH = 200
 const NODE_HEIGHT = 70
 
-// Approximate rendered dimensions of a TeamSubAgentNode (matches TeamAgentNode: min-w-[160px], px-4 py-3)
 const SUB_AGENT_W = 160
 const SUB_AGENT_H = 50
 
-// Padding around agent nodes inside the group container
 const GROUP_PAD_X = 24
-const GROUP_PAD_TOP = 52 // space for header
+const GROUP_PAD_TOP = 52
 const GROUP_PAD_BOTTOM = 24
 
-/** Calculate group node dimensions from saved team.nodes positions (bounding box). */
 function calcGroupSize(team: Team): { width: number; height: number } {
   const n = team.agent_ids.length
   if (n === 0) return { width: NODE_WIDTH, height: NODE_HEIGHT }
 
-  // Use saved node positions if available
   if (team.nodes && team.nodes.length > 0) {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     for (const tn of team.nodes) {
@@ -54,7 +50,6 @@ function calcGroupSize(team: Team): { width: number; height: number } {
     }
   }
 
-  // Fallback for teams without saved positions: simple row layout
   return {
     width: GROUP_PAD_X + n * SUB_AGENT_W + (n - 1) * 40 + GROUP_PAD_X,
     height: GROUP_PAD_TOP + SUB_AGENT_H + GROUP_PAD_BOTTOM,
@@ -66,7 +61,6 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
   g.setDefaultEdgeLabel(() => ({}))
   g.setGraph({ rankdir: 'LR', nodesep: 40, ranksep: 80 })
 
-  // Pre-resolve team for each task
   const taskTeamMap = new Map<string, Team>()
   for (const task of tasks) {
     if (task.team_id) {
@@ -77,7 +71,6 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
     }
   }
 
-  // Add nodes to dagre — team tasks get larger dimensions
   for (const task of tasks) {
     const team = taskTeamMap.get(task.id)
     if (team) {
@@ -88,7 +81,6 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
     }
   }
 
-  // Add dependency edges
   const edges: Edge[] = []
   for (const task of tasks) {
     if (task.dependencies) {
@@ -98,7 +90,7 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
           source: depId,
           target: task.id,
           animated: tasks.find((t) => t.id === depId)?.status === 'running',
-          style: { stroke: '#52525b', strokeWidth: 2 },
+          style: { stroke: '#3f3f46', strokeWidth: 1.5 },
         })
         g.setEdge(depId, task.id)
       }
@@ -107,7 +99,6 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
 
   dagre.layout(g)
 
-  // Build ReactFlow nodes
   const nodes: Node[] = []
 
   for (const task of tasks) {
@@ -115,10 +106,8 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
     const team = taskTeamMap.get(task.id)
 
     if (team) {
-      // --- Team subflow using saved positions ---
       const { width, height } = calcGroupSize(team)
 
-      // Group container node
       nodes.push({
         id: task.id,
         type: 'teamGroup',
@@ -133,9 +122,7 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
         },
       })
 
-      // Agent child nodes — use saved positions from team.nodes
       if (team.nodes && team.nodes.length > 0) {
-        // Find the bounding box origin to normalize positions relative to group
         let minX = Infinity, minY = Infinity
         for (const tn of team.nodes) {
           minX = Math.min(minX, tn.x)
@@ -160,7 +147,6 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
           })
         }
       } else {
-        // Fallback: legacy teams with only agent_ids, no saved positions
         for (let i = 0; i < team.agent_ids.length; i++) {
           const agentId = team.agent_ids[i]
           const agent = agents.find((a) => a.id === agentId)
@@ -181,19 +167,17 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
         }
       }
 
-      // Intra-team edges (connections between agents inside the team)
       if (team.edges) {
         for (const te of team.edges) {
           edges.push({
             id: `team-${task.id}-${te.source}-${te.target}`,
             source: `${task.id}-agent-${te.source}`,
             target: `${task.id}-agent-${te.target}`,
-            style: { stroke: '#52525b', strokeWidth: 2 },
+            style: { stroke: '#3f3f46', strokeWidth: 1.5 },
           })
         }
       }
     } else {
-      // --- Regular single-agent task ---
       const getAgentName = () => {
         if (task.agent_id) {
           return agents.find((a) => a.id === task.agent_id)?.name || task.agent_id.slice(0, 8)
@@ -242,7 +226,6 @@ export function DAGView({ tasks, agents, teams, selectedTaskId, onSelectTask }: 
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
-      // Ignore clicks on sub-agent nodes inside team groups
       if (node.type === 'teamSubAgent') return
       onSelectTask(node.id)
     },
@@ -258,7 +241,7 @@ export function DAGView({ tasks, agents, teams, selectedTaskId, onSelectTask }: 
   }
 
   return (
-    <div className="flex-1 bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
+    <div className="flex-1 bg-[#111114] rounded-xl border border-white/[0.06] overflow-hidden">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -269,24 +252,25 @@ export function DAGView({ tasks, agents, teams, selectedTaskId, onSelectTask }: 
         fitView
         fitViewOptions={{ padding: 0.3 }}
         proOptions={{ hideAttribution: true }}
-        className="bg-zinc-900"
+        className="bg-[#111114]"
         minZoom={0.3}
         maxZoom={2}
       >
-        <Background color="#27272a" gap={20} />
+        <Background color="#1f1f23" gap={20} />
         <MiniMap
           nodeColor={(node) => {
             const status = (node.data as any)?.status
             switch (status) {
-              case 'running': return '#3b82f6'
+              case 'running': return '#60a5fa'
               case 'completed': return '#10b981'
               case 'failed': return '#ef4444'
               case 'queued': return '#f59e0b'
-              default: return '#52525b'
+              case 'awaiting_input': return '#a855f7'
+              default: return '#3f3f46'
             }
           }}
-          maskColor="rgba(0,0,0,0.7)"
-          className="!bg-zinc-800 !border-zinc-700"
+          maskColor="rgba(0,0,0,0.75)"
+          className="!bg-[#111114] !border-white/[0.06]"
         />
       </ReactFlow>
     </div>

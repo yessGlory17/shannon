@@ -23,6 +23,7 @@ interface SessionState {
   deleteTask: (id: string) => Promise<void>
   startSession: (sessionID: string) => Promise<void>
   stopSession: (sessionID: string) => Promise<void>
+  completeSession: (sessionID: string) => Promise<void>
   refreshTask: (taskID: string) => Promise<void>
 
   // Stream event actions
@@ -108,6 +109,10 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     await window.go.main.App.StopSession(sessionID)
   },
 
+  completeSession: async (sessionID) => {
+    await window.go.main.App.CompleteSession(sessionID)
+  },
+
   refreshTask: async (taskID) => {
     try {
       const task = await window.go.main.App.GetTask(taskID)
@@ -178,13 +183,15 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       }
     }
 
-    // Add user message to chat
+    // Add user message to chat with current log count for interleaving
+    const currentLogCount = get().logs[taskID]?.length || 0
     const userMsg: ChatMessage = {
       id: `user-${++msgCounter}`,
       role: 'user',
       content: message,
       timestamp: Date.now(),
       attachments,
+      logIndex: currentLogCount,
     }
     get().addChatMessage(taskID, userMsg)
 

@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
-import { Clock, Loader2, Check, X, AlertTriangle } from 'lucide-react'
+import { Clock, Loader2, Check, X, AlertTriangle, MessageCircleQuestion } from 'lucide-react'
 import type { TaskStatus } from '../../types'
 
 interface TaskNodeData {
@@ -10,36 +10,48 @@ interface TaskNodeData {
   selected: boolean
 }
 
-const statusConfig: Record<TaskStatus, { icon: JSX.Element; ring: string; bg: string }> = {
+const statusConfig: Record<TaskStatus, { icon: JSX.Element; ring: string; bg: string; glow: string }> = {
   pending: {
     icon: <Clock size={12} />,
     ring: 'ring-zinc-600',
-    bg: 'bg-zinc-800 border-zinc-700',
+    bg: 'bg-[#111114] border-white/[0.08]',
+    glow: '',
   },
   queued: {
     icon: <Loader2 size={12} className="animate-spin" />,
-    ring: 'ring-amber-500',
-    bg: 'bg-zinc-800 border-amber-600/50',
+    ring: 'ring-amber-500/60',
+    bg: 'bg-[#111114] border-amber-500/25',
+    glow: 'shadow-[0_0_12px_rgba(245,158,11,0.08)]',
   },
   running: {
     icon: <Loader2 size={12} className="animate-spin" />,
-    ring: 'ring-blue-500',
-    bg: 'bg-zinc-800 border-blue-500/50',
+    ring: 'ring-blue-400/60',
+    bg: 'bg-[#111114] border-blue-400/25',
+    glow: 'shadow-[0_0_12px_rgba(96,165,250,0.10)]',
   },
   completed: {
     icon: <Check size={12} />,
-    ring: 'ring-emerald-500',
-    bg: 'bg-zinc-800 border-emerald-600/50',
+    ring: 'ring-emerald-500/60',
+    bg: 'bg-[#111114] border-emerald-500/25',
+    glow: '',
   },
   failed: {
     icon: <AlertTriangle size={12} />,
-    ring: 'ring-red-500',
-    bg: 'bg-zinc-800 border-red-600/50',
+    ring: 'ring-red-500/60',
+    bg: 'bg-[#111114] border-red-500/25',
+    glow: '',
   },
   cancelled: {
     icon: <X size={12} />,
     ring: 'ring-zinc-600',
-    bg: 'bg-zinc-800 border-zinc-600',
+    bg: 'bg-[#111114] border-white/[0.06]',
+    glow: '',
+  },
+  awaiting_input: {
+    icon: <MessageCircleQuestion size={12} />,
+    ring: 'ring-purple-500/60',
+    bg: 'bg-[#111114] border-purple-500/25',
+    glow: 'shadow-[0_0_12px_rgba(168,85,247,0.10)]',
   },
 }
 
@@ -50,6 +62,7 @@ const statusTextColor: Record<TaskStatus, string> = {
   completed: 'text-emerald-400',
   failed: 'text-red-400',
   cancelled: 'text-zinc-500',
+  awaiting_input: 'text-purple-400',
 }
 
 function TaskNodeComponent({ data }: { data: TaskNodeData }) {
@@ -60,7 +73,7 @@ function TaskNodeComponent({ data }: { data: TaskNodeData }) {
     <>
       <Handle type="target" position={Position.Left} className="!bg-zinc-600 !border-zinc-500 !w-2 !h-2" />
       <div
-        className={`px-4 py-3 rounded-lg border min-w-[160px] max-w-[220px] transition-all ${config.bg} ${
+        className={`px-4 py-3 rounded-xl border min-w-[160px] max-w-[220px] transition-all duration-200 ${config.bg} ${config.glow} ${
           data.selected ? `ring-2 ${config.ring}` : ''
         }`}
       >
@@ -71,7 +84,7 @@ function TaskNodeComponent({ data }: { data: TaskNodeData }) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-zinc-500 truncate">{data.agentName}</span>
+          <span className="text-[10px] text-zinc-600 truncate">{data.agentName}</span>
           <span className={`text-[10px] capitalize ${textColor}`}>{data.status}</span>
         </div>
       </div>

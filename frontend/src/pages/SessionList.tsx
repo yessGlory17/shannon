@@ -58,12 +58,12 @@ export function SessionList() {
     <div className="w-full">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-100">Sessions</h1>
+          <h1 className="text-2xl font-bold font-display text-zinc-100">Sessions</h1>
           <p className="text-sm text-zinc-500 mt-1">Create and manage work sessions</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-100 hover:bg-white text-zinc-900 text-sm font-medium rounded-md transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm hover:shadow-brand"
         >
           <Plus size={16} />
           New Session
@@ -72,26 +72,26 @@ export function SessionList() {
 
       {/* Create form */}
       {showForm && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5 mb-6">
-          <h2 className="text-sm font-medium text-zinc-200 mb-4">New Session</h2>
+        <div className="rounded-xl bg-[#111114] border border-white/[0.06] shadow-card p-5 mb-6">
+          <h2 className="text-sm font-medium text-zinc-300 mb-4">New Session</h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs text-zinc-400 mb-1.5">Session Name</label>
+              <label className="block text-xs text-zinc-500 font-medium mb-1.5">Session Name</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Add authentication system"
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 input-focus transition-colors"
               />
             </div>
             <div>
-              <label className="block text-xs text-zinc-400 mb-1.5">Project</label>
+              <label className="block text-xs text-zinc-500 font-medium mb-1.5">Workspace</label>
               <select
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"
+                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 input-focus transition-colors"
               >
-                <option value="">Select a project...</option>
+                <option value="">Select a workspace...</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
@@ -101,13 +101,13 @@ export function SessionList() {
               <button
                 onClick={handleCreate}
                 disabled={!name.trim() || !projectId}
-                className="px-4 py-2 bg-zinc-100 hover:bg-white text-zinc-900 text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-brand-sm"
               >
                 Create & Open
               </button>
               <button
                 onClick={() => { setShowForm(false); setName(''); setProjectId('') }}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm rounded-md transition-colors"
+                className="px-4 py-2 bg-white/[0.06] hover:bg-white/[0.10] text-zinc-300 text-sm rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -119,11 +119,11 @@ export function SessionList() {
       {/* Session list */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 size={20} className="text-zinc-500 animate-spin" />
+          <Loader2 size={20} className="text-brand-blue animate-spin" />
         </div>
       ) : sessions.length === 0 ? (
         <div className="text-center py-12">
-          <Play size={32} className="mx-auto text-zinc-700 mb-3" />
+          <Play size={32} className="mx-auto text-zinc-700 mb-3 opacity-30" />
           <p className="text-sm text-zinc-500">No sessions yet</p>
           <p className="text-xs text-zinc-600 mt-1">Create a session to start working on tasks</p>
         </div>
@@ -135,7 +135,7 @@ export function SessionList() {
               <div
                 key={sess.id}
                 onClick={() => navigate(`/sessions/${sess.id}`)}
-                className="w-full flex items-center gap-4 px-5 py-4 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-zinc-700 text-left transition-colors group cursor-pointer"
+                className="w-full flex items-center gap-4 px-5 py-4 rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card hover:shadow-card-hover text-left transition-all duration-200 group cursor-pointer"
               >
                 <div className={cfg.color}>{cfg.icon}</div>
                 <div className="flex-1 min-w-0">
@@ -149,7 +149,7 @@ export function SessionList() {
                 </span>
                 <button
                   onClick={(e) => handleDelete(sess.id, e)}
-                  className="p-1.5 rounded text-zinc-600 hover:text-red-400 hover:bg-zinc-800 opacity-0 group-hover:opacity-100 transition-all"
+                  className="p-1.5 rounded text-zinc-600 hover:text-red-400 hover:bg-white/[0.06] opacity-0 group-hover:opacity-100 transition-all"
                 >
                   <Trash2 size={14} />
                 </button>

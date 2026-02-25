@@ -41,27 +41,27 @@ export function Settings() {
   if (!config) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 size={20} className="text-zinc-500 animate-spin" />
+        <Loader2 size={20} className="text-brand-blue animate-spin" />
       </div>
     )
   }
 
   return (
     <div className="w-full max-w-4xl">
-      <h1 className="text-2xl font-semibold text-zinc-100 mb-6">Settings</h1>
+      <h1 className="text-2xl font-bold font-display text-zinc-100 mb-6">Settings</h1>
 
       <div className="space-y-6">
         {/* Claude CLI */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <h2 className="text-sm font-medium text-zinc-200 mb-4">Claude CLI</h2>
+        <div className="rounded-xl bg-[#111114] border border-white/[0.06] shadow-card p-5">
+          <h2 className="text-sm font-medium text-zinc-300 mb-4">Claude CLI</h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs text-zinc-400 mb-1.5">CLI Path</label>
+              <label className="block text-xs text-zinc-500 font-medium mb-1.5">CLI Path</label>
               <input
                 value={config.claude_cli_path}
                 onChange={(e) => setConfig({ ...config, claude_cli_path: e.target.value })}
                 placeholder="claude"
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 input-focus transition-colors"
               />
               <p className="text-xs text-zinc-600 mt-1">
                 Path to the Claude CLI binary. Default: "claude" (uses PATH)
@@ -71,26 +71,26 @@ export function Settings() {
         </div>
 
         {/* Paths */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <h2 className="text-sm font-medium text-zinc-200 mb-4">Storage</h2>
+        <div className="rounded-xl bg-[#111114] border border-white/[0.06] shadow-card p-5">
+          <h2 className="text-sm font-medium text-zinc-300 mb-4">Storage</h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs text-zinc-400 mb-1.5">Workspace Directory</label>
+              <label className="block text-xs text-zinc-500 font-medium mb-1.5">Workspace Directory</label>
               <input
                 value={config.workspace_path}
                 onChange={(e) => setConfig({ ...config, workspace_path: e.target.value })}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 input-focus transition-colors"
               />
               <p className="text-xs text-zinc-600 mt-1">
                 Directory for isolated task workspaces (project copies)
               </p>
             </div>
             <div>
-              <label className="block text-xs text-zinc-400 mb-1.5">Data Directory</label>
+              <label className="block text-xs text-zinc-500 font-medium mb-1.5">Data Directory</label>
               <input
                 value={config.data_dir}
                 onChange={(e) => setConfig({ ...config, data_dir: e.target.value })}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 input-focus transition-colors"
               />
               <p className="text-xs text-zinc-600 mt-1">
                 Directory for database and configuration files
@@ -100,15 +100,15 @@ export function Settings() {
         </div>
 
         {/* Preferences */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <h2 className="text-sm font-medium text-zinc-200 mb-4">Preferences</h2>
+        <div className="rounded-xl bg-[#111114] border border-white/[0.06] shadow-card p-5">
+          <h2 className="text-sm font-medium text-zinc-300 mb-4">Preferences</h2>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-zinc-400 mb-1.5">Log Level</label>
+              <label className="block text-xs text-zinc-500 font-medium mb-1.5">Log Level</label>
               <select
                 value={config.log_level}
                 onChange={(e) => setConfig({ ...config, log_level: e.target.value })}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"
+                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 input-focus transition-colors"
               >
                 <option value="debug">Debug</option>
                 <option value="info">Info</option>
@@ -117,11 +117,11 @@ export function Settings() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-zinc-400 mb-1.5">Language</label>
+              <label className="block text-xs text-zinc-500 font-medium mb-1.5">Language</label>
               <select
                 value={config.language}
                 onChange={(e) => setConfig({ ...config, language: e.target.value })}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:border-zinc-500"
+                className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 input-focus transition-colors"
               >
                 <option value="en">English</option>
                 <option value="tr">Turkish</option>
@@ -131,8 +131,8 @@ export function Settings() {
         </div>
 
         {/* Maintenance */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <h2 className="text-sm font-medium text-zinc-200 mb-4">Maintenance</h2>
+        <div className="rounded-xl bg-[#111114] border border-white/[0.06] shadow-card p-5">
+          <h2 className="text-sm font-medium text-zinc-300 mb-4">Maintenance</h2>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-zinc-300">Clean up workspaces</p>
@@ -143,7 +143,7 @@ export function Settings() {
             <button
               onClick={handleCleanupWorkspaces}
               disabled={cleaning}
-              className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm rounded-md disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-white/[0.06] hover:bg-white/[0.10] text-zinc-300 text-sm rounded-lg disabled:opacity-50 transition-colors"
             >
               {cleaning ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -153,7 +153,7 @@ export function Settings() {
               {cleaning ? 'Cleaning...' : 'Clean'}
             </button>
           </div>
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-zinc-800">
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/[0.06]">
             <HardDrive size={14} className="text-zinc-600" />
             <p className="text-xs text-zinc-600">
               Workspace: {config.workspace_path}
@@ -166,7 +166,7 @@ export function Settings() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-100 hover:bg-white text-zinc-900 text-sm font-medium rounded-md disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-all shadow-brand-sm"
           >
             {saving ? (
               <Loader2 size={14} className="animate-spin" />

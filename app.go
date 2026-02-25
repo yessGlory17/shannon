@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -38,8 +39,8 @@ type App struct {
 	testRunner  *services.TestRunner
 	planner         *services.Planner
 	promptImprover  *services.PromptImprover
-	projectSetup    *services.ProjectSetup
 	mcpCatalog      *services.MCPCatalog
+	mcpHealth       *services.MCPHealthChecker
 }
 
 func NewApp() *App {
@@ -102,9 +103,8 @@ func (a *App) startup(ctx context.Context) {
 	a.sessionMgr = services.NewSessionManager(a.sessions, a.tasks, a.projectMgr)
 	a.planner = services.NewPlanner()
 	a.promptImprover = services.NewPromptImprover()
-	a.projectSetup = services.NewProjectSetup()
-	a.projectSetup.SetWailsContext(ctx)
 	a.mcpCatalog = services.NewMCPCatalog()
+	a.mcpHealth = services.NewMCPHealthChecker()
 }
 
 // ─── Config ────────────────────────────────────────────
@@ -141,18 +141,8 @@ func (a *App) DeleteProject(id string) error {
 
 func (a *App) SelectProjectFolder() (string, error) {
 	return runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "Select Project Folder",
+		Title: "Select Workspace Folder",
 	})
-}
-
-// ─── Project Setup ─────────────────────────────────────
-
-func (a *App) CheckProjectSetup(path string) (*services.ProjectSetupStatus, error) {
-	return a.projectSetup.CheckStatus(path)
-}
-
-func (a *App) RunProjectSetup(path string, action services.SetupAction) error {
-	return a.projectSetup.RunSetup(path, action)
 }
 
 // ─── Agent ─────────────────────────────────────────────
@@ -178,6 +168,152 @@ func (a *App) UpdateAgent(agent models.Agent) error {
 
 func (a *App) DeleteAgent(id string) error {
 	return a.agents.Delete(id)
+}
+
+// SeedExampleAgents creates pre-configured example agents that use
+// the currently installed MCP servers. It auto-detects which MCP servers
+// exist and creates appropriate agents for them.
+func (a *App) SeedExampleAgents() ([]models.Agent, error) {
+	servers, err := a.mcpServers.List()
+	if err != nil {
+		return nil, fmt.Errorf("list MCP servers: %w", err)
+	}
+
+	// Build server_key -> ID lookup for enabled servers
+	keyToID := make(map[string]string)
+	for _, s := range servers {
+		if s.Enabled {
+			keyToID[s.ServerKey] = s.ID
+		}
+	}
+
+	// Collect all MCP server IDs
+	allIDs := make(models.StringSlice, 0, len(keyToID))
+	for _, id := range keyToID {
+		allIDs = append(allIDs, id)
+	}
+
+	// Template agents based on available MCP servers
+	type agentTemplate struct {
+		Name         string
+		Description  string
+		Model        string
+		SystemPrompt string
+		AllowedTools models.StringSlice
+		MCPKeys      []string // MCP server keys this agent should use
+		Permissions  string
+	}
+
+	templates := []agentTemplate{
+		{
+			Name:        "Full-Stack Developer",
+			Description: "A senior developer agent with access to all configured MCP tools. Can read/write code, run commands, browse the web, and interact with external services via MCP.",
+			Model:       "sonnet",
+			SystemPrompt: `You are a senior full-stack developer. You have access to MCP tools that let you interact with external services.
+
+Use MCP tools proactively when they can help accomplish the task:
+- If a GitLab/GitHub MCP is available, use it to read issues, create merge requests, review code, etc.
+- If a Playwright MCP is available, use it to test web applications in a real browser.
+- If a filesystem or database MCP is available, use it to explore and modify data.
+
+Always write clean, well-structured code. Follow existing project conventions.
+When making changes, verify they work by running tests or checking the output.`,
+			AllowedTools: models.StringSlice{"Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch", "Task", "NotebookEdit"},
+			MCPKeys:      nil, // will use ALL available MCP servers
+			Permissions:  "acceptEdits",
+		},
+	}
+
+	// Add GitLab-specific agent if gitlab server exists
+	if _, ok := keyToID["gitlab"]; ok {
+		templates = append(templates, agentTemplate{
+			Name:        "GitLab Assistant",
+			Description: "Specialized for GitLab operations: issues, merge requests, code reviews, and CI/CD pipelines via MCP.",
+			Model:       "sonnet",
+			SystemPrompt: `You are a GitLab operations specialist. You have access to the GitLab MCP server which lets you interact with GitLab directly.
+
+Your capabilities via MCP:
+- List, read, and create issues
+- Create and review merge requests
+- Browse repository files and branches
+- Manage CI/CD pipelines
+- Search across projects
+
+When given a task:
+1. Use the GitLab MCP tools to gather context (read issues, check existing MRs, etc.)
+2. Make code changes if needed using file tools
+3. Create merge requests or update issues via MCP
+4. Always provide clear descriptions and link related issues.`,
+			AllowedTools: models.StringSlice{"Bash", "Read", "Write", "Edit", "Glob", "Grep"},
+			MCPKeys:      []string{"gitlab"},
+			Permissions:  "acceptEdits",
+		})
+	}
+
+	// Add Playwright-specific agent if playwright server exists
+	for _, key := range []string{"playwright-mcp", "playwright"} {
+		if _, ok := keyToID[key]; ok {
+			templates = append(templates, agentTemplate{
+				Name:        "QA Test Engineer",
+				Description: "Automated testing agent using Playwright MCP for browser-based testing, screenshot capture, and web interaction.",
+				Model:       "us.anthropic.claude-opus-4-1-20250805-v1:0",
+				SystemPrompt: `You are a QA test engineer with access to Playwright MCP for browser automation.
+
+Your capabilities via MCP:
+- Navigate to web pages and take screenshots
+- Click buttons, fill forms, and interact with web elements
+- Assert page content and verify UI behavior
+- Run end-to-end test scenarios in a real browser
+
+When given a testing task:
+1. Plan the test steps
+2. Use Playwright MCP to navigate to the target page
+3. Interact with the page elements as needed
+4. Take screenshots to document the results
+5. Report pass/fail with evidence
+
+Write test results clearly and include screenshots when relevant.`,
+				AllowedTools: models.StringSlice{"Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"},
+				MCPKeys:      []string{key},
+				Permissions:  "bypassPermissions",
+			})
+			break
+		}
+	}
+
+	// Create the agents
+	var created []models.Agent
+	for _, tmpl := range templates {
+		agent := models.Agent{
+			Name:         tmpl.Name,
+			Description:  tmpl.Description,
+			Model:        tmpl.Model,
+			SystemPrompt: tmpl.SystemPrompt,
+			AllowedTools: tmpl.AllowedTools,
+			Permissions:  tmpl.Permissions,
+		}
+
+		// Assign MCP server IDs
+		if tmpl.MCPKeys == nil {
+			// Use all available MCP servers
+			agent.MCPServerIDs = allIDs
+		} else {
+			ids := make(models.StringSlice, 0)
+			for _, key := range tmpl.MCPKeys {
+				if id, ok := keyToID[key]; ok {
+					ids = append(ids, id)
+				}
+			}
+			agent.MCPServerIDs = ids
+		}
+
+		if err := a.agents.Create(&agent); err != nil {
+			return nil, fmt.Errorf("create agent %q: %w", tmpl.Name, err)
+		}
+		created = append(created, agent)
+	}
+
+	return created, nil
 }
 
 // ─── MCP Servers ──────────────────────────────────────
@@ -213,6 +349,222 @@ func (a *App) SearchMCPCatalog(query string, page int) (*services.CatalogRespons
 
 func (a *App) GetMCPInstallConfig(qualifiedName string) *services.InstallConfig {
 	return a.mcpCatalog.GetInstallConfig(qualifiedName)
+}
+
+// ─── MCP Health Check ─────────────────────────────────
+
+func (a *App) TestMCPServer(command string, args []string, env map[string]string) *services.MCPHealthResult {
+	return a.mcpHealth.Check(command, args, env)
+}
+
+// ─── MCP JSON Import ──────────────────────────────────
+
+func (a *App) ParseMCPJson(jsonStr string) ([]services.MCPJsonImportEntry, error) {
+	return a.mcpCatalog.ParseMCPJson(jsonStr)
+}
+
+// ─── MCP Import from Claude CLI ──────────────────────
+
+// ImportMCPFromClaude reads ~/.claude.json and collects mcpServers from both
+// top-level and per-project scopes, then imports them into the DB.
+// Returns the JSON string of the imported servers in .mcp.json format.
+func (a *App) ImportMCPFromClaude() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("get home dir: %w", err)
+	}
+
+	claudeConfigPath := filepath.Join(home, ".claude.json")
+	data, err := os.ReadFile(claudeConfigPath)
+	if err != nil {
+		return "", fmt.Errorf("read ~/.claude.json: %w", err)
+	}
+
+	// Claude Code stores MCP servers in:
+	// - Top-level: {"mcpServers": {...}}
+	// - Per-project: {"projects": {"/path": {"mcpServers": {...}}}}
+	type claudeServerEntry struct {
+		Type    string            `json:"type"`
+		Command string            `json:"command"`
+		Args    []string          `json:"args"`
+		Env     map[string]string `json:"env"`
+	}
+
+	var claudeConfig struct {
+		MCPServers map[string]claudeServerEntry            `json:"mcpServers"`
+		Projects   map[string]struct {
+			MCPServers map[string]claudeServerEntry `json:"mcpServers"`
+		} `json:"projects"`
+	}
+
+	if err := json.Unmarshal(data, &claudeConfig); err != nil {
+		return "", fmt.Errorf("parse ~/.claude.json: %w", err)
+	}
+
+	// Collect all MCP servers: top-level first, then per-project (later entries override)
+	type mcpEntry struct {
+		Command string            `json:"command"`
+		Args    []string          `json:"args,omitempty"`
+		Env     map[string]string `json:"env,omitempty"`
+	}
+	collected := make(map[string]mcpEntry)
+
+	addServers := func(servers map[string]claudeServerEntry) {
+		for key, srv := range servers {
+			entry := mcpEntry{Command: srv.Command}
+			if len(srv.Args) > 0 {
+				entry.Args = srv.Args
+			}
+			if len(srv.Env) > 0 {
+				entry.Env = srv.Env
+			}
+			collected[key] = entry
+		}
+	}
+
+	// Top-level mcpServers
+	addServers(claudeConfig.MCPServers)
+
+	// Per-project mcpServers
+	for _, proj := range claudeConfig.Projects {
+		addServers(proj.MCPServers)
+	}
+
+	if len(collected) == 0 {
+		return "", fmt.Errorf("no mcpServers found in ~/.claude.json")
+	}
+
+	mcpJson := struct {
+		MCPServers map[string]mcpEntry `json:"mcpServers"`
+	}{
+		MCPServers: collected,
+	}
+
+	jsonBytes, err := json.MarshalIndent(mcpJson, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("marshal JSON: %w", err)
+	}
+
+	// Sync to DB
+	jsonStr := string(jsonBytes)
+	if err := a.SyncMCPFromJson(jsonStr); err != nil {
+		return "", fmt.Errorf("sync to DB: %w", err)
+	}
+
+	log.Printf("Imported %d MCP server(s) from ~/.claude.json", len(collected))
+	return jsonStr, nil
+}
+
+// ─── MCP JSON Sync ───────────────────────────────────
+
+// SyncMCPFromJson takes a .mcp.json format string, parses it, and syncs the DB
+// to match. New servers are created, existing ones updated, removed ones deleted.
+func (a *App) SyncMCPFromJson(jsonStr string) error {
+	entries, err := a.mcpCatalog.ParseMCPJson(jsonStr)
+	if err != nil {
+		return err
+	}
+
+	existing, err := a.mcpServers.List()
+	if err != nil {
+		return fmt.Errorf("list existing servers: %w", err)
+	}
+
+	// Build map of existing servers by server_key
+	existingMap := make(map[string]models.MCPServer)
+	for _, s := range existing {
+		existingMap[s.ServerKey] = s
+	}
+
+	// Track which keys are in the new JSON
+	newKeys := make(map[string]bool)
+
+	for _, entry := range entries {
+		newKeys[entry.ServerKey] = true
+
+		if ex, ok := existingMap[entry.ServerKey]; ok {
+			// Update existing
+			ex.Command = entry.Command
+			ex.Args = entry.Args
+			if entry.Env != nil {
+				ex.Env = entry.Env
+			} else {
+				ex.Env = make(map[string]string)
+			}
+			ex.Enabled = true
+			if err := a.mcpServers.Update(&ex); err != nil {
+				return fmt.Errorf("update server %s: %w", entry.ServerKey, err)
+			}
+		} else {
+			// Create new
+			env := entry.Env
+			if env == nil {
+				env = make(map[string]string)
+			}
+			srv := models.MCPServer{
+				Name:      entry.ServerKey,
+				ServerKey: entry.ServerKey,
+				Command:   entry.Command,
+				Args:      entry.Args,
+				Env:       env,
+				Enabled:   true,
+			}
+			if err := a.mcpServers.Create(&srv); err != nil {
+				return fmt.Errorf("create server %s: %w", entry.ServerKey, err)
+			}
+		}
+	}
+
+	// Delete servers that are no longer in the JSON
+	for key, ex := range existingMap {
+		if !newKeys[key] {
+			if err := a.mcpServers.Delete(ex.ID); err != nil {
+				return fmt.Errorf("delete server %s: %w", key, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// ExportMCPJson exports all MCP servers from the DB as a .mcp.json format string.
+func (a *App) ExportMCPJson() (string, error) {
+	servers, err := a.mcpServers.List()
+	if err != nil {
+		return "", fmt.Errorf("list servers: %w", err)
+	}
+
+	type mcpEntry struct {
+		Command string            `json:"command"`
+		Args    []string          `json:"args,omitempty"`
+		Env     map[string]string `json:"env,omitempty"`
+	}
+
+	mcpConfig := struct {
+		MCPServers map[string]mcpEntry `json:"mcpServers"`
+	}{
+		MCPServers: make(map[string]mcpEntry),
+	}
+
+	for _, srv := range servers {
+		entry := mcpEntry{
+			Command: srv.Command,
+		}
+		if len(srv.Args) > 0 {
+			entry.Args = srv.Args
+		}
+		if len(srv.Env) > 0 {
+			entry.Env = srv.Env
+		}
+		mcpConfig.MCPServers[srv.ServerKey] = entry
+	}
+
+	data, err := json.MarshalIndent(mcpConfig, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("marshal JSON: %w", err)
+	}
+
+	return string(data), nil
 }
 
 // ─── Team ──────────────────────────────────────────────
@@ -300,6 +652,10 @@ func (a *App) StartSession(sessionID string) error {
 
 func (a *App) StopSession(sessionID string) error {
 	return a.taskEngine.StopSession(sessionID)
+}
+
+func (a *App) CompleteSession(sessionID string) error {
+	return a.taskEngine.CompleteSession(sessionID)
 }
 
 func (a *App) StopTask(taskID string) error {

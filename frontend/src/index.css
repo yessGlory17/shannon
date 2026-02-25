@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Design Tokens ── */
+:root {
+  --brand-blue: #60a5fa;
+  --brand-purple: #a78bfa;
+  --brand-gradient: linear-gradient(135deg, var(--brand-blue), var(--brand-purple));
+  --surface-0: #09090b;
+  --surface-1: #111114;
+  --surface-2: #18181b;
+  --surface-3: #1f1f23;
+  --surface-4: #27272a;
+  --border-default: rgba(255, 255, 255, 0.06);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-strong: rgba(255, 255, 255, 0.10);
+  --border-brand: rgba(96, 165, 250, 0.20);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -20,9 +36,20 @@ html, body, #root {
   align-items: center;
   height: 36px;
   min-height: 36px;
-  background: #18181b; /* zinc-900 */
-  border-bottom: 1px solid #27272a; /* zinc-800 */
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-default);
   user-select: none;
+  position: relative;
+}
+
+.titlebar::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(96,165,250,0.08) 30%, rgba(167,139,250,0.08) 70%, transparent);
 }
 
 .titlebar-drag {
@@ -35,12 +62,13 @@ html, body, #root {
 }
 
 .titlebar-title {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Nunito', 'Inter', sans-serif;
   font-size: 12px;
-  font-weight: 600;
-  color: #a1a1aa; /* zinc-400 */
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  color: #71717a;
+  letter-spacing: 0.04em;
   pointer-events: none;
+  text-transform: uppercase;
 }
 
 .titlebar-controls {
@@ -57,34 +85,123 @@ html, body, #root {
   height: 100%;
   border: none;
   background: transparent;
-  color: #a1a1aa; /* zinc-400 */
+  color: #52525b;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
   outline: none;
 }
 
 .titlebar-btn-default:hover {
-  background: #27272a; /* zinc-800 */
-  color: #f4f4f5; /* zinc-100 */
+  background: rgba(255, 255, 255, 0.06);
+  color: #a1a1aa;
 }
 
 .titlebar-btn-close:hover {
-  background: #dc2626; /* red-600 */
+  background: #dc2626;
   color: #ffffff;
 }
 
-/* Custom scrollbar */
+/* ── Scrollbar ── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ── Utility Classes ── */
+
+/* Brand gradient text */
+.text-brand-gradient {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Brand gradient border (uses pseudo-element) */
+.border-brand-gradient {
+  position: relative;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+.border-brand-gradient::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--brand-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Subtle card surface */
+.surface-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0) 100%),
+              var(--surface-2);
+  border: 1px solid var(--border-default);
+}
+
+.surface-card-hover:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Input focus glow */
+.input-focus:focus {
+  border-color: rgba(96, 165, 250, 0.35);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.08);
+  outline: none;
+}
+
+/* Smooth page transition */
+.page-enter {
+  animation: fade-in 0.15s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ReactFlow overrides for brand consistency */
+.react-flow__minimap {
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.react-flow__edge-path {
+  stroke: #3f3f46 !important;
+}
+
+.react-flow__handle {
+  background: #52525b !important;
+  border-color: #3f3f46 !important;
+}
+
+/* Select dropdown styling */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px !important;
+}
+
+/* Focus ring for interactive elements */
+.focus-brand:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--surface-0), 0 0 0 4px rgba(96, 165, 250, 0.4);
 }

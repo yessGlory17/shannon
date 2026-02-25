@@ -8,6 +8,7 @@ interface AgentState {
   create: (a: Partial<Agent>) => Promise<Agent>
   update: (a: Agent) => Promise<void>
   remove: (id: string) => Promise<void>
+  seedExamples: () => Promise<Agent[]>
 }
 
 export const useAgentStore = create<AgentState>((set) => ({
@@ -36,5 +37,11 @@ export const useAgentStore = create<AgentState>((set) => ({
   remove: async (id) => {
     await window.go.main.App.DeleteAgent(id)
     set((s) => ({ agents: s.agents.filter((x) => x.id !== id) }))
+  },
+  seedExamples: async () => {
+    const created = await window.go.main.App.SeedExampleAgents()
+    const agents = await window.go.main.App.ListAgents()
+    set({ agents: agents || [] })
+    return created || []
   },
 }))

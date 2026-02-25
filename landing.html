@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Shannon — Orchestrate Claude Code Agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════ RESET & TOKENS ═══════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #07070a;
+  --bg2: #0c0c10;
+  --surface: #111116;
+  --surface2: #18181e;
+  --surface3: #1e1e26;
+  --border: #1f1f28;
+  --border2: #2a2a35;
+  --border3: #3a3a48;
+  --text: #eeeef0;
+  --text2: #9d9daa;
+  --text3: #6a6a78;
+  --text4: #44444f;
+  --blue: #60a5fa;
+  --purple: #a78bfa;
+  --indigo: #818cf8;
+  --emerald: #34d399;
+  --red: #f87171;
+  --amber: #fbbf24;
+  --rose: #fb7185;
+  --grad: linear-gradient(135deg, #60a5fa, #a78bfa);
+  --grad-subtle: linear-gradient(135deg, rgba(96,165,250,0.12), rgba(167,139,250,0.12));
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', -apple-system, sans-serif;
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 { font-family: 'Syne', sans-serif; line-height: 1.15; }
+
+/* ═══════════════════════ DOT GRID ═══════════════════════ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--border) 0.8px, transparent 0.8px);
+  background-size: 28px 28px;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════════════ AMBIENT ORBS ═══════════════════════ */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════════════ SCROLL ANIMATIONS ═══════════════════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-d1 { transition-delay: 0.08s; }
+.reveal-d2 { transition-delay: 0.16s; }
+.reveal-d3 { transition-delay: 0.24s; }
+.reveal-d4 { transition-delay: 0.32s; }
+.reveal-d5 { transition-delay: 0.40s; }
+
+/* ═══════════════════════ NAVIGATION ═══════════════════════ */
+nav {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  background: rgba(7,7,10,0.75);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 28px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.nav-brand svg { width: 26px; height: 26px; }
+
+.nav-brand span {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+
+.nav-links { display: flex; gap: 24px; align-items: center; }
+
+.nav-links a {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text3);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover { color: var(--text); }
+
+.btn-gh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-gh:hover { color: var(--text); background: var(--surface3); border-color: var(--border3); }
+
+/* ═══════════════════════ HERO ═══════════════════════ */
+.hero {
+  position: relative;
+  padding: 140px 28px 60px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.hero-logo-wrap {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 36px;
+  z-index: 1;
+}
+
+.hero-logo-wrap svg { width: 88px; height: 88px; }
+
+.hero-logo-glow {
+  position: absolute;
+  inset: -40px;
+  background: radial-gradient(circle, rgba(96,165,250,0.18) 0%, rgba(167,139,250,0.08) 50%, transparent 70%);
+  border-radius: 50%;
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+.hero h1 {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(48px, 7vw, 72px);
+  font-weight: 800;
+  letter-spacing: -3px;
+  background: linear-gradient(145deg, #fff 30%, var(--text2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+}
+
+.hero-sub {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(17px, 2.5vw, 21px);
+  font-weight: 400;
+  color: var(--text2);
+  max-width: 560px;
+  margin: 0 auto 12px;
+  line-height: 1.55;
+}
+
+.hero-note {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  color: var(--text4);
+  margin-bottom: 36px;
+  font-style: italic;
+}
+
+.hero-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 26px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif;
+  color: #fff;
+  background: var(--grad);
+  border: none;
+  border-radius: 10px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 2px 16px rgba(96,165,250,0.15);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(96,165,250,0.3);
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 26px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Outfit', sans-serif;
+  color: var(--text2);
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-outline:hover { color: var(--text); border-color: var(--border3); background: var(--surface); }
+
+/* ═══════════════════════ APP MOCKUP ═══════════════════════ */
+.mockup-section {
+  position: relative;
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 20px 28px 100px;
+}
+
+.mockup-frame {
+  position: relative;
+  z-index: 1;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.02),
+    0 20px 60px rgba(0,0,0,0.5),
+    0 2px 8px rgba(0,0,0,0.3);
+}
+
+.mockup-titlebar {
+  height: 38px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 8px;
+}
+
+.traffic-light { display: flex; gap: 6px; }
+.traffic-light span {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+.tl-red { background: #ff5f57; }
+.tl-yellow { background: #febc2e; }
+.tl-green { background: #28c840; }
+
+.mockup-titlebar-text {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text3);
+  margin-right: 60px;
+}
+
+.mockup-body { display: flex; height: 420px; }
+
+/* Sidebar */
+.m-sidebar {
+  width: 180px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.m-sidebar-brand {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.m-sidebar-brand svg { width: 28px; height: 28px; flex-shrink: 0; }
+
+.m-sidebar-brand-text h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+}
+
+.m-sidebar-brand-text span {
+  font-size: 9px;
+  color: var(--text4);
+}
+
+.m-nav { flex: 1; padding: 6px; display: flex; flex-direction: column; gap: 1px; }
+
+.m-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.m-nav-item.active {
+  background: var(--surface3);
+  color: var(--text);
+}
+
+.m-nav-item svg { width: 15px; height: 15px; opacity: 0.7; }
+.m-nav-item.active svg { opacity: 1; }
+
+.m-nav-footer {
+  padding: 8px 6px;
+  border-top: 1px solid var(--border);
+}
+
+/* Main Content */
+.m-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.m-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.m-header h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.m-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.m-badge-running {
+  background: rgba(96,165,250,0.12);
+  color: var(--blue);
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.m-content { flex: 1; display: flex; }
+
+/* DAG Panel */
+.m-dag {
+  flex: 1;
+  position: relative;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.dag-graph {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.dag-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.dag-node {
+  width: 140px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  border-left: 3px solid var(--text4);
+  transition: all 0.3s;
+}
+
+.dag-node-completed { border-left-color: var(--emerald); }
+.dag-node-running { border-left-color: var(--blue); box-shadow: 0 0 16px rgba(96,165,250,0.08); }
+.dag-node-pending { border-left-color: var(--text4); opacity: 0.6; }
+
+.dag-node-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.dag-node-agent {
+  font-size: 9px;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.dag-node-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-dot-completed { background: var(--emerald); }
+.status-dot-running { background: var(--blue); animation: dot-blink 1.5s ease-in-out infinite; }
+.status-dot-pending { background: var(--text4); }
+
+@keyframes dot-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.dag-edge {
+  width: 28px;
+  height: 2px;
+  background: var(--border2);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dag-edge::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -3px;
+  border-left: 5px solid var(--border2);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+
+.dag-edge-active {
+  background: linear-gradient(90deg, var(--blue), var(--purple));
+}
+
+.dag-edge-active::after {
+  border-left-color: var(--purple);
+}
+
+.dag-fork {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  position: relative;
+}
+
+.dag-fork::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 20px;
+  bottom: 20px;
+  width: 2px;
+  background: var(--border2);
+}
+
+/* Right Panel */
+.m-panel {
+  width: 260px;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.m-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.m-tab {
+  flex: 1;
+  padding: 9px 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  border-bottom: 2px solid transparent;
+}
+
+.m-tab.active {
+  color: var(--emerald);
+  border-bottom-color: var(--emerald);
+}
+
+.m-tab-content { flex: 1; overflow: hidden; }
+
+.m-log {
+  padding: 10px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  line-height: 1.7;
+  color: var(--text3);
+}
+
+.m-log .log-tool { color: var(--amber); }
+.m-log .log-result { color: var(--emerald); }
+.m-log .log-text { color: var(--text2); }
+.m-log .log-dim { opacity: 0.4; }
+
+/* ═══════════════════════ SECTION UTILITY ═══════════════════════ */
+.section {
+  position: relative;
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 100px 28px;
+}
+
+.section-sm { padding: 80px 28px; }
+
+.section-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 14px;
+}
+
+.section-title {
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  margin-bottom: 14px;
+}
+
+.section-desc {
+  font-size: 16px;
+  color: var(--text3);
+  max-width: 520px;
+  line-height: 1.6;
+}
+
+.section-center { text-align: center; }
+.section-center .section-desc { margin: 0 auto; }
+
+.divider {
+  max-width: 1060px;
+  margin: 0 auto;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ═══════════════════════ WORKFLOW ═══════════════════════ */
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  margin-top: 56px;
+  position: relative;
+}
+
+.workflow-step {
+  position: relative;
+  padding: 0 16px;
+  text-align: center;
+}
+
+.workflow-step::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  right: -2px;
+  width: calc(100% - 44px);
+  height: 1px;
+  background: var(--border2);
+}
+
+.workflow-step:last-child::after { display: none; }
+
+.workflow-num {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--grad);
+  box-shadow: 0 4px 20px rgba(96,165,250,0.2);
+}
+
+.workflow-step h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+}
+
+.workflow-step p {
+  font-size: 12.5px;
+  color: var(--text3);
+  line-height: 1.55;
+}
+
+/* ═══════════════════════ FEATURES ═══════════════════════ */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 56px;
+}
+
+.feature-card {
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  border-color: var(--border2);
+  background: var(--surface2);
+  transform: translateY(-2px);
+}
+
+.feature-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.fi-blue { background: rgba(96,165,250,0.1); color: var(--blue); }
+.fi-purple { background: rgba(167,139,250,0.1); color: var(--purple); }
+.fi-indigo { background: rgba(129,140,248,0.1); color: var(--indigo); }
+.fi-emerald { background: rgba(52,211,153,0.1); color: var(--emerald); }
+.fi-amber { background: rgba(251,191,36,0.1); color: var(--amber); }
+.fi-rose { background: rgba(251,113,133,0.1); color: var(--rose); }
+
+.feature-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-bottom: 8px;
+}
+
+.feature-card p {
+  font-size: 13px;
+  color: var(--text3);
+  line-height: 1.65;
+}
+
+/* ═══════════════════════ DIFF REVIEW MOCKUP ═══════════════════════ */
+.review-section {
+  position: relative;
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 100px 28px;
+}
+
+.review-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+  margin-top: 48px;
+}
+
+.review-info h3 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  margin-bottom: 16px;
+}
+
+.review-info p {
+  font-size: 14px;
+  color: var(--text3);
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+
+.review-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.review-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.review-list li svg {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.diff-frame {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.diff-header {
+  padding: 10px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.diff-filename {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text2);
+}
+
+.diff-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(96,165,250,0.1);
+  color: var(--blue);
+}
+
+.diff-body {
+  padding: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.diff-hunk {
+  padding: 4px 14px;
+  color: var(--text4);
+  background: var(--surface);
+  font-size: 10px;
+}
+
+.diff-line {
+  padding: 1px 14px 1px 38px;
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.diff-line-num {
+  position: absolute;
+  left: 10px;
+  width: 20px;
+  text-align: right;
+  color: var(--text4);
+  font-size: 10px;
+  user-select: none;
+}
+
+.diff-del {
+  background: rgba(248,113,113,0.06);
+  color: var(--red);
+}
+
+.diff-add {
+  background: rgba(52,211,153,0.06);
+  color: var(--emerald);
+}
+
+.diff-ctx { color: var(--text3); }
+
+.diff-actions {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+}
+
+.diff-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text2);
+  font-family: 'Outfit', sans-serif;
+}
+
+.diff-btn-accept {
+  background: rgba(52,211,153,0.1);
+  border-color: rgba(52,211,153,0.2);
+  color: var(--emerald);
+}
+
+.diff-btn-reject {
+  background: rgba(248,113,113,0.08);
+  border-color: rgba(248,113,113,0.15);
+  color: var(--red);
+}
+
+/* ═══════════════════════ STRATEGIES ═══════════════════════ */
+.strat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.strat-card {
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.strat-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+}
+
+.strat-viz {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.strat-node {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--grad);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  font-family: 'Syne', sans-serif;
+  flex-shrink: 0;
+}
+
+.strat-edge {
+  width: 24px;
+  height: 2px;
+  background: var(--border3);
+  flex-shrink: 0;
+}
+
+.strat-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.strat-card p {
+  font-size: 12.5px;
+  color: var(--text3);
+  line-height: 1.55;
+}
+
+/* ═══════════════════════ TECH STACK ═══════════════════════ */
+.stack-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.stack-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  transition: border-color 0.2s;
+}
+
+.stack-pill:hover { border-color: var(--border2); }
+
+.stack-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════ CTA ═══════════════════════ */
+.cta-section {
+  position: relative;
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 100px 28px;
+  text-align: center;
+}
+
+.cta-code {
+  display: inline-block;
+  margin-top: 28px;
+  padding: 16px 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text2);
+  text-align: left;
+  line-height: 2;
+}
+
+.cta-code .dim { color: var(--text4); }
+.cta-code .hl { color: var(--blue); }
+.cta-code .acc { color: var(--purple); }
+
+/* ═══════════════════════ FOOTER ═══════════════════════ */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 28px;
+  text-align: center;
+}
+
+footer p {
+  font-size: 12px;
+  color: var(--text4);
+  line-height: 1.7;
+}
+
+footer a { color: var(--text3); text-decoration: none; }
+footer a:hover { color: var(--text2); }
+
+/* ═══════════════════════ RESPONSIVE ═══════════════════════ */
+@media (max-width: 900px) {
+  .workflow-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .workflow-step::after { display: none; }
+  .features-grid { grid-template-columns: 1fr; }
+  .strat-grid { grid-template-columns: 1fr; }
+  .review-layout { grid-template-columns: 1fr; }
+  .mockup-body { height: auto; flex-direction: column; }
+  .m-sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; }
+  .m-nav { flex-direction: row; overflow-x: auto; }
+  .m-panel { width: 100%; }
+  .m-dag { min-height: 240px; }
+  .dag-graph { transform: scale(0.8); }
+}
+
+@media (max-width: 640px) {
+  .nav-links a:not(.btn-gh) { display: none; }
+  .m-sidebar { display: none; }
+  .m-panel { display: none; }
+  .mockup-body { height: 280px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ NAV ═══════ -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-brand">
+      <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="n1" x1="56" y1="456" x2="456" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+        <rect x="72" y="72" width="368" height="368" rx="60" fill="url(#n1)" opacity="0.12"/>
+        <rect x="72" y="72" width="368" height="368" rx="60" stroke="url(#n1)" stroke-width="6" fill="none" opacity="0.35"/>
+        <g transform="translate(256,256)"><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#n1)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#n1)" transform="rotate(60)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#n1)" transform="rotate(120)"/></g>
+        <line x1="256" y1="186" x2="256" y2="100" stroke="url(#n1)" stroke-width="8" stroke-linecap="round" opacity="0.6"/><rect x="244" y="86" width="24" height="24" rx="5" fill="url(#n1)" opacity="0.6"/>
+        <line x1="326" y1="256" x2="412" y2="256" stroke="url(#n1)" stroke-width="8" stroke-linecap="round" opacity="0.6"/><rect x="400" y="244" width="24" height="24" rx="5" fill="url(#n1)" opacity="0.6"/>
+      </svg>
+      <span>Shannon</span>
+    </a>
+    <div class="nav-links">
+      <a href="#workflow">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#review">Review</a>
+      <a href="#stack">Stack</a>
+      <a href="https://github.com" class="btn-gh">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════ HERO ═══════ -->
+<section class="hero">
+  <div class="orb" style="width:600px;height:600px;background:radial-gradient(circle,rgba(96,165,250,0.1),transparent 70%);top:-100px;left:50%;transform:translateX(-50%);"></div>
+  <div class="orb" style="width:400px;height:400px;background:radial-gradient(circle,rgba(167,139,250,0.06),transparent 70%);top:100px;right:-100px;"></div>
+
+  <div class="hero-logo-wrap reveal">
+    <div class="hero-logo-glow"></div>
+    <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="h1" x1="56" y1="456" x2="456" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+      <rect x="72" y="72" width="368" height="368" rx="60" fill="url(#h1)" opacity="0.12"/>
+      <rect x="72" y="72" width="368" height="368" rx="60" stroke="url(#h1)" stroke-width="6" fill="none" opacity="0.35"/>
+      <g transform="translate(256,256)"><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#h1)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#h1)" transform="rotate(60)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#h1)" transform="rotate(120)"/></g>
+      <circle cx="256" cy="256" r="72" fill="url(#h1)" opacity="0.06"/>
+      <line x1="256" y1="186" x2="256" y2="72" stroke="url(#h1)" stroke-width="10" stroke-linecap="round" opacity="0.75"/><rect x="242" y="60" width="28" height="28" rx="6" fill="url(#h1)" opacity="0.75"/>
+      <line x1="326" y1="256" x2="440" y2="256" stroke="url(#h1)" stroke-width="10" stroke-linecap="round" opacity="0.75"/><rect x="426" y="242" width="28" height="28" rx="6" fill="url(#h1)" opacity="0.75"/>
+      <line x1="256" y1="326" x2="256" y2="440" stroke="url(#h1)" stroke-width="10" stroke-linecap="round" opacity="0.75"/><rect x="242" y="426" width="28" height="28" rx="6" fill="url(#h1)" opacity="0.75"/>
+      <line x1="186" y1="256" x2="72" y2="256" stroke="url(#h1)" stroke-width="10" stroke-linecap="round" opacity="0.75"/><rect x="58" y="242" width="28" height="28" rx="6" fill="url(#h1)" opacity="0.75"/>
+      <path d="M 292 218 L 292 148 L 392 148" stroke="url(#h1)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/><rect x="382" y="138" width="22" height="22" rx="5" fill="url(#h1)" opacity="0.55"/>
+      <path d="M 218 218 L 148 218 L 148 130" stroke="url(#h1)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/><rect x="137" y="116" width="22" height="22" rx="5" fill="url(#h1)" opacity="0.55"/>
+      <path d="M 292 294 L 364 294 L 364 382" stroke="url(#h1)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/><rect x="353" y="374" width="22" height="22" rx="5" fill="url(#h1)" opacity="0.55"/>
+      <path d="M 218 294 L 218 364 L 130 364" stroke="url(#h1)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/><rect x="116" y="353" width="22" height="22" rx="5" fill="url(#h1)" opacity="0.55"/>
+    </svg>
+  </div>
+
+  <h1 class="reveal reveal-d1">Shannon</h1>
+  <p class="hero-sub reveal reveal-d2">
+    A desktop app that orchestrates multiple Claude Code agents working together on your projects.
+  </p>
+  <p class="hero-note reveal reveal-d3">
+    Named after Claude Shannon, the father of information theory.
+  </p>
+
+  <div class="hero-actions reveal reveal-d4">
+    <a href="#workflow" class="btn-primary">
+      See how it works
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+    </a>
+    <a href="https://github.com" class="btn-outline">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+      View source
+    </a>
+  </div>
+</section>
+
+<!-- ═══════ APP MOCKUP ═══════ -->
+<div class="mockup-section">
+  <div class="mockup-frame reveal">
+    <div class="mockup-titlebar">
+      <div class="traffic-light">
+        <span class="tl-red"></span>
+        <span class="tl-yellow"></span>
+        <span class="tl-green"></span>
+      </div>
+      <span class="mockup-titlebar-text">Shannon</span>
+    </div>
+    <div class="mockup-body">
+      <!-- Sidebar -->
+      <div class="m-sidebar">
+        <div class="m-sidebar-brand">
+          <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="ms" x1="56" y1="456" x2="456" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+            <rect x="72" y="72" width="368" height="368" rx="60" fill="url(#ms)" opacity="0.12"/>
+            <rect x="72" y="72" width="368" height="368" rx="60" stroke="url(#ms)" stroke-width="6" fill="none" opacity="0.35"/>
+            <g transform="translate(256,256)"><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#ms)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#ms)" transform="rotate(60)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#ms)" transform="rotate(120)"/></g>
+            <line x1="256" y1="186" x2="256" y2="100" stroke="url(#ms)" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+            <line x1="326" y1="256" x2="412" y2="256" stroke="url(#ms)" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+          </svg>
+          <div class="m-sidebar-brand-text">
+            <h4>Shannon</h4>
+            <span>for Claude Code</span>
+          </div>
+        </div>
+        <div class="m-nav">
+          <div class="m-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Dashboard
+          </div>
+          <div class="m-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Projects
+          </div>
+          <div class="m-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8V4H8"/><rect x="8" y="2" width="8" height="4" rx="1"/><rect x="4" y="8" width="16" height="14" rx="2"/><path d="M9 15h6"/></svg>
+            Agents
+          </div>
+          <div class="m-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/></svg>
+            MCP Servers
+          </div>
+          <div class="m-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Teams
+          </div>
+          <div class="m-nav-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Sessions
+          </div>
+        </div>
+        <div class="m-nav-footer">
+          <div class="m-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            Settings
+          </div>
+        </div>
+      </div>
+
+      <!-- Main -->
+      <div class="m-main">
+        <div class="m-header">
+          <h3>Session: Implement Authentication</h3>
+          <span class="m-badge m-badge-running">Running</span>
+        </div>
+        <div class="m-content">
+          <!-- DAG -->
+          <div class="m-dag">
+            <div class="dag-graph">
+              <div class="dag-col">
+                <div class="dag-node dag-node-completed">
+                  <div class="dag-node-title">Plan Tasks</div>
+                  <div class="dag-node-agent">planner</div>
+                  <div class="dag-node-status"><span class="status-dot status-dot-completed"></span> <span style="color:var(--emerald)">Completed</span></div>
+                </div>
+              </div>
+              <div class="dag-edge dag-edge-active"></div>
+              <div class="dag-col dag-fork">
+                <div class="dag-node dag-node-running">
+                  <div class="dag-node-title">Build Login UI</div>
+                  <div class="dag-node-agent">frontend-dev</div>
+                  <div class="dag-node-status"><span class="status-dot status-dot-running"></span> <span style="color:var(--blue)">Running</span></div>
+                </div>
+                <div class="dag-node dag-node-running">
+                  <div class="dag-node-title">Auth API Routes</div>
+                  <div class="dag-node-agent">backend-dev</div>
+                  <div class="dag-node-status"><span class="status-dot status-dot-running"></span> <span style="color:var(--blue)">Running</span></div>
+                </div>
+              </div>
+              <div class="dag-edge"></div>
+              <div class="dag-col">
+                <div class="dag-node dag-node-pending">
+                  <div class="dag-node-title">Write Tests</div>
+                  <div class="dag-node-agent">test-writer</div>
+                  <div class="dag-node-status"><span class="status-dot status-dot-pending"></span> <span style="color:var(--text4)">Queued</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Panel -->
+          <div class="m-panel">
+            <div class="m-tabs">
+              <div class="m-tab active">Chat</div>
+              <div class="m-tab">Changes</div>
+            </div>
+            <div class="m-tab-content">
+              <div class="m-log">
+                <div class="log-dim">// frontend-dev output</div>
+                <div><span class="log-tool">tool_use:</span> <span class="log-text">Read src/App.tsx</span></div>
+                <div><span class="log-result">result:</span> <span class="log-text">File read successfully</span></div>
+                <div><span class="log-tool">tool_use:</span> <span class="log-text">Write src/auth/LoginForm.tsx</span></div>
+                <div><span class="log-text">Creating login form component with email and password fields...</span></div>
+                <div><span class="log-result">result:</span> <span class="log-text">File created</span></div>
+                <div><span class="log-tool">tool_use:</span> <span class="log-text">Write src/auth/AuthContext.tsx</span></div>
+                <div><span class="log-text">Setting up authentication context provider...</span></div>
+                <div><span class="log-result">result:</span> <span class="log-text">File created</span></div>
+                <div><span class="log-tool">tool_use:</span> <span class="log-text">Edit src/App.tsx</span></div>
+                <div><span class="log-text">Adding auth routes and protected route wrapper...</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mockup shadow/glow -->
+  <div class="orb" style="width:500px;height:300px;background:radial-gradient(ellipse,rgba(96,165,250,0.06),transparent 70%);bottom:-80px;left:50%;transform:translateX(-50%);"></div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════ WORKFLOW ═══════ -->
+<section class="section section-center" id="workflow">
+  <span class="section-label reveal">How it works</span>
+  <h2 class="section-title reveal reveal-d1">From idea to reviewed code in five steps</h2>
+  <p class="section-desc reveal reveal-d2">
+    Shannon sits between you and your Claude Code CLI. You define the agents, Shannon handles the rest.
+  </p>
+
+  <div class="workflow-grid">
+    <div class="workflow-step reveal">
+      <div class="workflow-num">1</div>
+      <h4>Define Agents</h4>
+      <p>Create agents with custom system prompts, model preferences (Opus, Sonnet, Haiku), and specific tool permissions. Each agent becomes a focused specialist.</p>
+    </div>
+    <div class="workflow-step reveal reveal-d1">
+      <div class="workflow-num">2</div>
+      <h4>Build Teams</h4>
+      <p>Group agents into teams. Choose parallel, sequential, or custom execution. Use the visual canvas to draw complex dependency graphs.</p>
+    </div>
+    <div class="workflow-step reveal reveal-d2">
+      <div class="workflow-num">3</div>
+      <h4>Plan Tasks</h4>
+      <p>Describe your goal in natural language. Shannon's AI planner breaks it into concrete tasks, maps dependencies, and assigns agents. Or write tasks manually.</p>
+    </div>
+    <div class="workflow-step reveal reveal-d3">
+      <div class="workflow-num">4</div>
+      <h4>Execute</h4>
+      <p>Each task runs Claude Code CLI in its own isolated workspace copy of your project. Watch progress in real-time through the DAG visualization.</p>
+    </div>
+    <div class="workflow-step reveal reveal-d4">
+      <div class="workflow-num">5</div>
+      <h4>Review &amp; Apply</h4>
+      <p>Review every diff hunk by hunk. Accept, reject with feedback, or edit directly in Monaco. Nothing touches your project until you approve.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════ FEATURES ═══════ -->
+<section class="section section-center" id="features">
+  <span class="section-label reveal">Features</span>
+  <h2 class="section-title reveal reveal-d1">Everything you need to orchestrate</h2>
+  <p class="section-desc reveal reveal-d2">A complete toolkit for managing Claude Code agents working in parallel on your codebase.</p>
+
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <div class="feature-icon fi-blue">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8V4H8"/><rect x="8" y="2" width="8" height="4" rx="1"/><rect x="4" y="8" width="16" height="14" rx="2"/><path d="M9 15h6"/></svg>
+      </div>
+      <h3>Custom Agents</h3>
+      <p>Give each agent a specialized system prompt and choose their Claude model &mdash; Opus for complex reasoning, Sonnet for balanced speed, Haiku for simple tasks. Control exactly which tools they can access. A frontend agent, backend agent, test writer &mdash; each fine-tuned for their role.</p>
+    </div>
+
+    <div class="feature-card reveal reveal-d1">
+      <div class="feature-icon fi-purple">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <h3>Team Orchestration</h3>
+      <p>Organize agents into teams with three execution strategies: parallel (all at once), sequential (chained one after another), or custom where you draw the dependency graph on a visual drag-and-drop canvas powered by React Flow.</p>
+    </div>
+
+    <div class="feature-card reveal reveal-d2">
+      <div class="feature-icon fi-indigo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <h3>AI Planning</h3>
+      <p>Describe what you want to accomplish in natural language. Shannon uses Claude to decompose your goal into concrete, assignable tasks with proper dependencies. Includes a prompt improver that helps refine agent system prompts for better results.</p>
+    </div>
+
+    <div class="feature-card reveal reveal-d3">
+      <div class="feature-icon fi-emerald">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
+      </div>
+      <h3>Diff Review</h3>
+      <p>The safety net. Accept or reject individual code hunks, approve or reject entire files, reject with written feedback that goes back to Claude for iteration, or modify workspace files directly in the built-in Monaco editor. Full control over every change.</p>
+    </div>
+
+    <div class="feature-card reveal reveal-d4">
+      <div class="feature-icon fi-amber">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </div>
+      <h3>Live Monitoring</h3>
+      <p>Watch your session unfold in real-time through a directed acyclic graph that visualizes every task's status, dependencies, and progress. Stream Claude's output live as each agent works. Know exactly what's happening at every moment.</p>
+    </div>
+
+    <div class="feature-card reveal reveal-d5">
+      <div class="feature-icon fi-rose">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/></svg>
+      </div>
+      <h3>MCP Integration</h3>
+      <p>Browse and install MCP servers from the Smithery registry, or configure your own. Attach servers to specific agents to extend their capabilities &mdash; web browsing, database access, API integrations, whatever your workflow needs.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════ DIFF REVIEW ═══════ -->
+<section class="review-section" id="review">
+  <span class="section-label reveal">Code review</span>
+  <h2 class="section-title reveal reveal-d1">Every change under your control</h2>
+
+  <div class="review-layout">
+    <div class="review-info reveal reveal-d2">
+      <h3>Nothing touches your project until you say so.</h3>
+      <p>Shannon creates an isolated workspace copy for each task. When an agent finishes, you review every change through a detailed diff interface before anything gets applied to your real codebase.</p>
+      <ul class="review-list">
+        <li>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span><strong>Hunk-level review</strong> &mdash; accept or reject individual code chunks within a file</span>
+        </li>
+        <li>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span><strong>File-level control</strong> &mdash; approve or reject entire files at once</span>
+        </li>
+        <li>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span><strong>Feedback loop</strong> &mdash; reject with a reason, Shannon sends your notes back to Claude for iteration</span>
+        </li>
+        <li>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span><strong>Inline editing</strong> &mdash; modify workspace files directly in the built-in Monaco editor</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="diff-frame reveal reveal-d3">
+      <div class="diff-header">
+        <span class="diff-filename">src/auth/LoginForm.tsx</span>
+        <span class="diff-badge">modified</span>
+      </div>
+      <div class="diff-body">
+        <div class="diff-hunk">@@ -8,4 +8,16 @@</div>
+        <div class="diff-line diff-ctx"><span class="diff-line-num">8</span> export function LoginForm() {</div>
+        <div class="diff-line diff-del"><span class="diff-line-num">9</span>-  return &lt;div&gt;TODO&lt;/div&gt;</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">9</span>+  const [email, setEmail] = useState('')</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">10</span>+  const [password, setPassword] = useState('')</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">11</span>+</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">12</span>+  return (</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">13</span>+    &lt;form className="space-y-4"&gt;</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">14</span>+      &lt;input value={email}</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">15</span>+        onChange={e =&gt; setEmail(...)}</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">16</span>+        placeholder="Email" /&gt;</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">17</span>+      &lt;input type="password"</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">18</span>+        value={password} /&gt;</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">19</span>+      &lt;button&gt;Sign in&lt;/button&gt;</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">20</span>+    &lt;/form&gt;</div>
+        <div class="diff-line diff-add"><span class="diff-line-num">21</span>+  )</div>
+        <div class="diff-line diff-ctx"><span class="diff-line-num">22</span> }</div>
+      </div>
+      <div class="diff-actions">
+        <div class="diff-btn diff-btn-accept">Accept Hunk</div>
+        <div class="diff-btn diff-btn-reject">Reject + Feedback</div>
+        <div class="diff-btn">Edit in Monaco</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════ STRATEGIES ═══════ -->
+<section class="section section-center" id="strategies">
+  <span class="section-label reveal">Execution strategies</span>
+  <h2 class="section-title reveal reveal-d1">Three ways to run your agents</h2>
+  <p class="section-desc reveal reveal-d2">Choose how agents within a team coordinate their work.</p>
+
+  <div class="strat-grid">
+    <div class="strat-card reveal">
+      <div class="strat-viz">
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+          <div style="display:flex;gap:8px;">
+            <div class="strat-node">A</div>
+            <div class="strat-node">B</div>
+            <div class="strat-node">C</div>
+          </div>
+        </div>
+      </div>
+      <h3>Parallel</h3>
+      <p>All agents run simultaneously. Maximum throughput for independent tasks that don't depend on each other.</p>
+    </div>
+
+    <div class="strat-card reveal reveal-d1">
+      <div class="strat-viz">
+        <div class="strat-node">A</div>
+        <div class="strat-edge"></div>
+        <div class="strat-node">B</div>
+        <div class="strat-edge"></div>
+        <div class="strat-node">C</div>
+      </div>
+      <h3>Sequential</h3>
+      <p>Agents chain one after another. Each agent waits for the previous to complete and can build on their work.</p>
+    </div>
+
+    <div class="strat-card reveal reveal-d2">
+      <div class="strat-viz">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div class="strat-node" style="width:30px;height:30px;font-size:11px;">A</div>
+          <div style="display:flex;gap:14px;">
+            <div class="strat-node" style="width:30px;height:30px;font-size:11px;">B</div>
+            <div class="strat-node" style="width:30px;height:30px;font-size:11px;">C</div>
+          </div>
+          <div class="strat-node" style="width:30px;height:30px;font-size:11px;">D</div>
+        </div>
+      </div>
+      <h3>Custom Graph</h3>
+      <p>Draw your own execution flow on a visual canvas. Full control over which agents depend on others.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════ TECH STACK ═══════ -->
+<section class="section section-sm section-center" id="stack">
+  <span class="section-label reveal">Built with</span>
+  <h2 class="section-title reveal reveal-d1">Tech stack</h2>
+
+  <div class="stack-grid reveal reveal-d2">
+    <div class="stack-pill"><div class="stack-dot" style="background:#00ADD8;"></div>Go 1.23</div>
+    <div class="stack-pill"><div class="stack-dot" style="background:#61DAFB;"></div>React 18</div>
+    <div class="stack-pill"><div class="stack-dot" style="background:#3178C6;"></div>TypeScript</div>
+    <div class="stack-pill"><div class="stack-dot" style="background:#E34F26;"></div>Wails v2</div>
+    <div class="stack-pill"><div class="stack-dot" style="background:#38BDF8;"></div>Tailwind CSS</div>
+    <div class="stack-pill"><div class="stack-dot" style="background:#007ACC;"></div>Monaco Editor</div>
+    <div class="stack-pill"><div class="stack-dot" style="background:#FF6B6B;"></div>React Flow</div>
+    <div class="stack-pill"><div class="stack-dot" style="background:#F59E0B;"></div>SQLite</div>
+    <div class="stack-pill"><div class="stack-dot" style="background:#764ABC;"></div>Zustand</div>
+    <div class="stack-pill"><div class="stack-dot" style="background:var(--purple);"></div>Claude Code CLI</div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════ CTA ═══════ -->
+<section class="cta-section">
+  <div class="orb" style="width:500px;height:400px;background:radial-gradient(circle,rgba(167,139,250,0.06),transparent 70%);top:-50px;left:50%;transform:translateX(-50%);"></div>
+
+  <span class="section-label reveal">Get started</span>
+  <h2 class="section-title reveal reveal-d1" style="position:relative;z-index:1;">Clone, build, orchestrate.</h2>
+  <p class="section-desc reveal reveal-d2" style="margin:0 auto 24px;position:relative;z-index:1;">
+    Shannon requires <a href="https://docs.anthropic.com/en/docs/claude-code" style="color:var(--blue);text-decoration:none;">Claude Code CLI</a> and <a href="https://wails.io" style="color:var(--blue);text-decoration:none;">Wails v2</a> installed on your machine.
+  </p>
+
+  <div class="cta-code reveal reveal-d3">
+    <span class="dim">$</span> git clone <span class="acc">https://github.com/yourusername/shannon.git</span><br/>
+    <span class="dim">$</span> <span class="hl">cd</span> shannon/frontend && npm install && <span class="hl">cd</span> ..<br/>
+    <span class="dim">$</span> <span class="hl">wails dev</span>
+  </div>
+
+  <p class="reveal reveal-d4" style="margin-top:28px;font-size:13px;color:var(--text4);position:relative;z-index:1;">
+    This is a hobby project. Built for personal use, shared in case others find it useful.
+  </p>
+</section>
+
+<!-- ═══════ FOOTER ═══════ -->
+<footer>
+  <p>
+    <strong>Shannon</strong> &mdash; named after <a href="https://en.wikipedia.org/wiki/Claude_Shannon">Claude Shannon</a>, the father of information theory.
+    <br/>Built with curiosity and too many Claude API calls.
+  </p>
+</footer>
+
+<!-- ═══════ SCROLL REVEAL ═══════ -->
+<script>
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

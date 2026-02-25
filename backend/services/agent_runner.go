@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -84,14 +85,20 @@ func (ar *AgentRunner) bufferEvent(taskID string, event claude.TaskStreamEvent) 
 
 // RunTaskOptions configures a RunTask invocation.
 type RunTaskOptions struct {
-	SessionID    string // Claude session ID for --resume (empty = new session)
-	Prompt       string // Override task prompt (used for follow-ups)
-	OnSessionID  func(sessionID string) // Callback when Claude session_id is received
+	SessionID   string                 // Claude session ID for --resume (empty = new session)
+	Prompt      string                 // Override task prompt (used for follow-ups)
+	OnSessionID func(sessionID string) // Callback when Claude session_id is received
+}
+
+// RunResult carries information about how the task run completed.
+type RunResult struct {
+	NeedsInput bool   // true if the agent's output indicates it needs user input
+	LastText   string // the last text output from the agent (for displaying in the UI)
 }
 
 // RunTask starts a Claude Code process for a task with the given agent configuration.
 // It streams events to the frontend and returns when the process completes.
-func (ar *AgentRunner) RunTask(ctx context.Context, task *models.Task, agent *models.Agent, workDir string, opts ...RunTaskOptions) error {
+func (ar *AgentRunner) RunTask(ctx context.Context, task *models.Task, agent *models.Agent, workDir string, opts ...RunTaskOptions) (*RunResult, error) {
 	var runOpts RunTaskOptions
 	if len(opts) > 0 {
 		runOpts = opts[0]
@@ -113,7 +120,7 @@ func (ar *AgentRunner) RunTask(ctx context.Context, task *models.Task, agent *mo
 		SessionID:    runOpts.SessionID,
 	})
 	if err != nil {
-		return fmt.Errorf("start claude (%s): %w", ar.cliPath, err)
+		return nil, fmt.Errorf("start claude (%s): %w", ar.cliPath, err)
 	}
 
 	ar.mu.Lock()
@@ -126,8 +133,9 @@ func (ar *AgentRunner) RunTask(ctx context.Context, task *models.Task, agent *mo
 		ar.mu.Unlock()
 	}()
 
-	// Stream events to frontend
+	// Stream events to frontend, track last text for question detection
 	eventCount := 0
+	var lastText string
 	for event := range proc.Events() {
 		eventCount++
 		if eventCount <= 3 || eventCount%10 == 0 {
@@ -141,9 +149,20 @@ func (ar *AgentRunner) RunTask(ctx context.Context, task *models.Task, agent *mo
 
 		ar.emitTaskEvent(task.ID, event)
 
+		// Track last text content for question detection
+		if event.Type == "assistant" {
+			text := claude.ExtractTextContent(event)
+			if text != "" {
+				lastText = text
+			}
+		}
+
 		// Capture result text
 		if event.Type == "result" {
 			task.ResultText = event.Result
+			if event.Result != "" {
+				lastText = event.Result
+			}
 		}
 	}
 	log.Printf("[runner] task %s: stream ended after %d events", task.ID[:8], eventCount)
@@ -165,11 +184,60 @@ func (ar *AgentRunner) RunTask(ctx context.Context, task *models.Task, agent *mo
 	if proc.Err() != nil {
 		stderrOutput := proc.Stderr()
 		if stderrOutput != "" {
-			return fmt.Errorf("claude process: %w\nstderr: %s", proc.Err(), stderrOutput)
+			return nil, fmt.Errorf("claude process: %w\nstderr: %s", proc.Err(), stderrOutput)
 		}
-		return fmt.Errorf("claude process: %w", proc.Err())
+		return nil, fmt.Errorf("claude process: %w", proc.Err())
 	}
-	return nil
+
+	// Detect if the agent's output indicates it needs user input
+	result := &RunResult{
+		LastText:   lastText,
+		NeedsInput: detectNeedsInput(lastText),
+	}
+	return result, nil
+}
+
+// detectNeedsInput checks if the agent's last output looks like it's asking for user input.
+// Only checks the last paragraph to avoid false positives from questions in the middle of output.
+func detectNeedsInput(text string) bool {
+	if text == "" {
+		return false
+	}
+	trimmed := strings.TrimSpace(text)
+
+	// Only look at the last paragraph (after last double newline) to reduce false positives.
+	// Agents often have questions mid-output but the final paragraph is what matters.
+	if idx := strings.LastIndex(trimmed, "\n\n"); idx >= 0 {
+		trimmed = strings.TrimSpace(trimmed[idx:])
+	}
+
+	// Check if the last paragraph ends with a question mark
+	if strings.HasSuffix(trimmed, "?") {
+		return true
+	}
+
+	lower := strings.ToLower(trimmed)
+
+	// Common patterns indicating the agent wants approval/input (checked in last paragraph only)
+	inputPatterns := []string{
+		"approve", "approval", "onay",
+		"ready for review", "ready to proceed",
+		"which option", "hangi seçenek", "hangisini",
+		"should i proceed", "devam edeyim mi",
+		"waiting for", "bekliyor",
+		"please confirm", "lütfen onaylayın",
+		"let me know", "bana bildirin",
+		"what do you think", "ne düşünüyorsun",
+		"do you want", "ister misin",
+		"select one", "birini seç",
+	}
+	for _, pattern := range inputPatterns {
+		if strings.Contains(lower, pattern) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // StopTask kills the Claude process for a specific task.

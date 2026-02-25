@@ -3,12 +3,13 @@ package models
 type TaskStatus string
 
 const (
-	TaskStatusPending   TaskStatus = "pending"
-	TaskStatusQueued    TaskStatus = "queued"
-	TaskStatusRunning   TaskStatus = "running"
-	TaskStatusCompleted TaskStatus = "completed"
-	TaskStatusFailed    TaskStatus = "failed"
-	TaskStatusCancelled TaskStatus = "cancelled"
+	TaskStatusPending       TaskStatus = "pending"
+	TaskStatusQueued        TaskStatus = "queued"
+	TaskStatusRunning       TaskStatus = "running"
+	TaskStatusCompleted     TaskStatus = "completed"
+	TaskStatusFailed        TaskStatus = "failed"
+	TaskStatusCancelled     TaskStatus = "cancelled"
+	TaskStatusAwaitingInput TaskStatus = "awaiting_input"
 )
 
 type SessionStatus string

@@ -12,7 +12,7 @@ import logoSvg from '../../assets/images/logo.svg'
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/projects', label: 'Projects', icon: FolderOpen },
+  { path: '/projects', label: 'Workspaces', icon: FolderOpen },
   { path: '/agents', label: 'Agents', icon: Bot },
   { path: '/mcp', label: 'MCP Servers', icon: Server },
   { path: '/teams', label: 'Teams', icon: Users },
@@ -24,20 +24,23 @@ export function Sidebar() {
   const navigate = useNavigate()
 
   return (
-    <aside className="w-56 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+    <aside className="w-56 bg-[#111114] border-r border-white/[0.06] flex flex-col">
       {/* Logo */}
-      <div className="p-4 border-b border-zinc-800 flex items-center gap-3">
-        <img src={logoSvg} alt="Shannon" className="w-14 h-14" />
+      <div className="p-4 border-b border-white/[0.06] flex items-center gap-3">
+        <div className="relative">
+          <img src={logoSvg} alt="Shannon" className="w-11 h-11" />
+          <div className="absolute inset-0 rounded-lg bg-brand-gradient opacity-[0.08] blur-md" />
+        </div>
         <div>
-          <h1 className="text-sm font-semibold text-zinc-100 tracking-tight leading-none">
+          <h1 className="text-sm font-bold font-display text-zinc-100 tracking-tight leading-none">
             Shannon
           </h1>
-          <p className="text-[10px] text-zinc-500 mt-0.5">for Claude Code</p>
+          <p className="text-[10px] text-zinc-600 mt-0.5 font-medium">for Claude Code</p>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-2 pt-2 space-y-0.5">
+      <nav className="flex-1 p-2 pt-3 space-y-0.5">
         {navItems.map((item) => {
           const isActive = item.path === '/'
             ? location.pathname === '/'
@@ -47,27 +50,45 @@ export function Sidebar() {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 ${
                 isActive
-                  ? 'bg-zinc-800 text-zinc-100'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                  ? 'bg-brand-gradient-subtle text-zinc-100 shadow-inner-brand'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
               }`}
             >
-              <Icon size={18} />
+              <Icon
+                size={17}
+                className={isActive ? 'text-brand-blue' : ''}
+                strokeWidth={isActive ? 2 : 1.5}
+              />
               {item.label}
+              {isActive && (
+                <div className="ml-auto w-1 h-4 rounded-full bg-brand-gradient opacity-70" />
+              )}
             </button>
           )
         })}
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-zinc-800">
+      <div className="p-3 border-t border-white/[0.06]">
         <button
           onClick={() => navigate('/settings')}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors"
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 ${
+            location.pathname === '/settings'
+              ? 'bg-brand-gradient-subtle text-zinc-100 shadow-inner-brand'
+              : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
+          }`}
         >
-          <Settings size={18} />
+          <Settings
+            size={17}
+            className={location.pathname === '/settings' ? 'text-brand-blue' : ''}
+            strokeWidth={location.pathname === '/settings' ? 2 : 1.5}
+          />
           Settings
+          {location.pathname === '/settings' && (
+            <div className="ml-auto w-1 h-4 rounded-full bg-brand-gradient opacity-70" />
+          )}
         </button>
       </div>
     </aside>

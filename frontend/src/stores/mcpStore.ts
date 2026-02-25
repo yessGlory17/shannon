@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { MCPServer, MCPCatalogItem, MCPCatalogResponse, MCPInstallConfig } from '../types'
+import type { MCPServer, MCPCatalogItem, MCPCatalogResponse, MCPInstallConfig, MCPHealthResult, MCPJsonImportEntry } from '../types'
 
 interface MCPState {
   // Installed servers
@@ -19,6 +19,19 @@ interface MCPState {
   catalogQuery: string
   searchCatalog: (query: string, page?: number) => Promise<void>
   getInstallConfig: (qualifiedName: string) => Promise<MCPInstallConfig>
+
+  // Health check
+  testServer: (command: string, args: string[], env: Record<string, string>) => Promise<MCPHealthResult>
+
+  // JSON import
+  parseMCPJson: (jsonStr: string) => Promise<MCPJsonImportEntry[]>
+
+  // JSON sync
+  syncFromJson: (jsonStr: string) => Promise<void>
+  exportJson: () => Promise<string>
+
+  // Import from Claude CLI
+  importFromClaude: () => Promise<string>
 }
 
 export const useMCPStore = create<MCPState>((set, get) => ({
@@ -76,5 +89,27 @@ export const useMCPStore = create<MCPState>((set, get) => ({
   },
   getInstallConfig: async (qualifiedName: string) => {
     return await window.go.main.App.GetMCPInstallConfig(qualifiedName)
+  },
+  testServer: async (command: string, args: string[], env: Record<string, string>) => {
+    return await window.go.main.App.TestMCPServer(command, args, env)
+  },
+  parseMCPJson: async (jsonStr: string) => {
+    return await window.go.main.App.ParseMCPJson(jsonStr)
+  },
+  syncFromJson: async (jsonStr: string) => {
+    await window.go.main.App.SyncMCPFromJson(jsonStr)
+    // Re-fetch to get updated list from DB
+    const servers = await window.go.main.App.ListMCPServers()
+    set({ servers: servers || [] })
+  },
+  exportJson: async () => {
+    return await window.go.main.App.ExportMCPJson()
+  },
+  importFromClaude: async () => {
+    const json = await window.go.main.App.ImportMCPFromClaude()
+    // Re-fetch to get updated list from DB
+    const servers = await window.go.main.App.ListMCPServers()
+    set({ servers: servers || [] })
+    return json
   },
 }))

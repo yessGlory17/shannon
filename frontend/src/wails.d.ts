@@ -1,4 +1,4 @@
-import type { Project, Agent, Team, Task, Session, DashboardStats, SessionStats, Config, DiffResult, PlanResult, PromptImproveResult, TaskStreamEvent, ProjectSetupStatus, SetupAction, MCPServer, MCPCatalogResponse, MCPInstallConfig } from './types'
+import type { Project, Agent, Team, Task, Session, DashboardStats, SessionStats, Config, DiffResult, PlanResult, PromptImproveResult, TaskStreamEvent, MCPServer, MCPCatalogResponse, MCPInstallConfig, MCPHealthResult, MCPJsonImportEntry } from './types'
 
 declare global {
   interface Window {
@@ -16,16 +16,13 @@ declare global {
           DeleteProject(id: string): Promise<void>
           SelectProjectFolder(): Promise<string>
 
-          // Project Setup
-          CheckProjectSetup(path: string): Promise<ProjectSetupStatus>
-          RunProjectSetup(path: string, action: SetupAction): Promise<void>
-
           // Agents
           ListAgents(): Promise<Agent[]>
           GetAgent(id: string): Promise<Agent>
           CreateAgent(a: Agent): Promise<Agent>
           UpdateAgent(a: Agent): Promise<void>
           DeleteAgent(id: string): Promise<void>
+          SeedExampleAgents(): Promise<Agent[]>
 
           // MCP Servers
           ListMCPServers(): Promise<MCPServer[]>
@@ -37,6 +34,19 @@ declare global {
           // MCP Catalog (Smithery Registry)
           SearchMCPCatalog(query: string, page: number): Promise<MCPCatalogResponse>
           GetMCPInstallConfig(qualifiedName: string): Promise<MCPInstallConfig>
+
+          // MCP Health Check
+          TestMCPServer(command: string, args: string[], env: Record<string, string>): Promise<MCPHealthResult>
+
+          // MCP JSON Import
+          ParseMCPJson(jsonStr: string): Promise<MCPJsonImportEntry[]>
+
+          // MCP JSON Sync
+          SyncMCPFromJson(jsonStr: string): Promise<void>
+          ExportMCPJson(): Promise<string>
+
+          // MCP Import from Claude CLI
+          ImportMCPFromClaude(): Promise<string>
 
           // Teams
           ListTeams(): Promise<Team[]>
@@ -62,6 +72,7 @@ declare global {
           // Execution
           StartSession(sessionID: string): Promise<void>
           StopSession(sessionID: string): Promise<void>
+          CompleteSession(sessionID: string): Promise<void>
           StopTask(taskID: string): Promise<void>
           ApplyTaskChanges(taskID: string): Promise<void>
           RejectTaskChanges(taskID: string): Promise<void>

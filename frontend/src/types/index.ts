@@ -4,7 +4,7 @@ export interface Project {
   path: string
   test_command?: string
   build_command?: string
-  setup_command?: string
+  setup_commands?: string[]
   created_at: string
   updated_at: string
 }
@@ -53,6 +53,42 @@ export interface MCPInstallConfig {
   command: string
   args: string[]
   envVars: { name: string; description: string; required: boolean; placeholder?: string }[]
+  docUrl?: string
+}
+
+// MCP Health Check
+export interface MCPHealthResult {
+  success: boolean
+  serverName?: string
+  version?: string
+  capabilities?: string[]
+  error?: string
+  durationMs: number
+}
+
+// MCP JSON Import
+export interface MCPJsonImportEntry {
+  serverKey: string
+  command: string
+  args: string[]
+  env: Record<string, string>
+}
+
+// MCP Install Wizard state
+export interface MCPWizardData {
+  source: 'catalog' | 'custom' | 'json'
+  catalogItem?: MCPCatalogItem
+  name: string
+  server_key: string
+  description: string
+  command: string
+  args: string[]
+  env: Record<string, string>
+  envDefs: MCPInstallConfig['envVars']
+  docUrl?: string
+  healthResult?: MCPHealthResult
+  healthChecked: boolean
+  enabled: boolean
 }
 
 export interface MCPCatalogResponse {
@@ -86,7 +122,7 @@ export interface Team {
   updated_at: string
 }
 
-export type TaskStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type TaskStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'awaiting_input'
 export type SessionStatus = 'planning' | 'running' | 'paused' | 'completed' | 'failed'
 
 export interface Task {
@@ -100,6 +136,7 @@ export interface Task {
   dependencies: string[]
   workspace_path?: string
   claude_session_id?: string
+  pending_input_data?: string
   exit_code: number
   result_text?: string
   files_changed: string[]
@@ -200,36 +237,6 @@ export interface PromptImproveResult {
   explanation: string
 }
 
-// Project Setup
-export interface ProjectType {
-  name: string
-  indicators: string[]
-}
-
-export interface ProjectSetupStatus {
-  has_git: boolean
-  has_commits: boolean
-  has_gitignore: boolean
-  current_branch: string
-  is_clean_tree: boolean
-  untracked_count: number
-  uncommitted_count: number
-  detected_type: ProjectType
-  is_ready: boolean
-}
-
-export interface SetupAction {
-  init_git: boolean
-  create_gitignore: boolean
-  initial_commit: boolean
-}
-
-export interface SetupStepEvent {
-  step: string
-  status: string
-  message: string
-}
-
 // Chat
 export type ChatMode = 'code' | 'plan' | 'auto'
 
@@ -240,4 +247,5 @@ export interface ChatMessage {
   type?: 'text' | 'tool_use' | 'tool_result' | 'result' | 'error' | 'done' | 'init'
   timestamp: number
   attachments?: string[]
+  logIndex?: number // stream event count when this message was sent, for interleaving
 }

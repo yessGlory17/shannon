@@ -201,7 +201,7 @@ export namespace models {
 	    path: string;
 	    test_command?: string;
 	    build_command?: string;
-	    setup_command?: string;
+	    setup_commands: string[];
 	    // Go type: time
 	    created_at: any;
 	    // Go type: time
@@ -218,7 +218,7 @@ export namespace models {
 	        this.path = source["path"];
 	        this.test_command = source["test_command"];
 	        this.build_command = source["build_command"];
-	        this.setup_command = source["setup_command"];
+	        this.setup_commands = source["setup_commands"];
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.updated_at = this.convertValues(source["updated_at"], null);
 	    }
@@ -300,6 +300,7 @@ export namespace models {
 	    exit_code: number;
 	    result_text?: string;
 	    files_changed: string[];
+	    pending_input_data?: string;
 	    test_passed?: boolean;
 	    test_output?: string;
 	    build_passed?: boolean;
@@ -331,6 +332,7 @@ export namespace models {
 	        this.exit_code = source["exit_code"];
 	        this.result_text = source["result_text"];
 	        this.files_changed = source["files_changed"];
+	        this.pending_input_data = source["pending_input_data"];
 	        this.test_passed = source["test_passed"];
 	        this.test_output = source["test_output"];
 	        this.build_passed = source["build_passed"];
@@ -465,6 +467,7 @@ export namespace services {
 	    command: string;
 	    args: string[];
 	    envVars: EnvVarDef[];
+	    docUrl?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new InstallConfig(source);
@@ -475,6 +478,7 @@ export namespace services {
 	        this.command = source["command"];
 	        this.args = source["args"];
 	        this.envVars = this.convertValues(source["envVars"], EnvVarDef);
+	        this.docUrl = source["docUrl"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -676,6 +680,46 @@ export namespace services {
 	
 	
 	
+	export class MCPHealthResult {
+	    success: boolean;
+	    serverName?: string;
+	    version?: string;
+	    capabilities?: string[];
+	    error?: string;
+	    durationMs: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new MCPHealthResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.serverName = source["serverName"];
+	        this.version = source["version"];
+	        this.capabilities = source["capabilities"];
+	        this.error = source["error"];
+	        this.durationMs = source["durationMs"];
+	    }
+	}
+	export class MCPJsonImportEntry {
+	    serverKey: string;
+	    command: string;
+	    args: string[];
+	    env: Record<string, string>;
+	
+	    static createFrom(source: any = {}) {
+	        return new MCPJsonImportEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.serverKey = source["serverKey"];
+	        this.command = source["command"];
+	        this.args = source["args"];
+	        this.env = source["env"];
+	    }
+	}
 	export class ProposedTask {
 	    title: string;
 	    prompt: string;
@@ -726,67 +770,6 @@ export namespace services {
 		    return a;
 		}
 	}
-	export class ProjectType {
-	    name: string;
-	    indicators: string[];
-	
-	    static createFrom(source: any = {}) {
-	        return new ProjectType(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.name = source["name"];
-	        this.indicators = source["indicators"];
-	    }
-	}
-	export class ProjectSetupStatus {
-	    has_git: boolean;
-	    has_commits: boolean;
-	    has_gitignore: boolean;
-	    current_branch: string;
-	    is_clean_tree: boolean;
-	    untracked_count: number;
-	    uncommitted_count: number;
-	    detected_type: ProjectType;
-	    is_ready: boolean;
-	
-	    static createFrom(source: any = {}) {
-	        return new ProjectSetupStatus(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.has_git = source["has_git"];
-	        this.has_commits = source["has_commits"];
-	        this.has_gitignore = source["has_gitignore"];
-	        this.current_branch = source["current_branch"];
-	        this.is_clean_tree = source["is_clean_tree"];
-	        this.untracked_count = source["untracked_count"];
-	        this.uncommitted_count = source["uncommitted_count"];
-	        this.detected_type = this.convertValues(source["detected_type"], ProjectType);
-	        this.is_ready = source["is_ready"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	
 	export class PromptImproveResult {
 	    improved_prompt: string;
 	    explanation: string;
@@ -799,23 +782,6 @@ export namespace services {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.improved_prompt = source["improved_prompt"];
 	        this.explanation = source["explanation"];
-	    }
-	}
-	
-	export class SetupAction {
-	    init_git: boolean;
-	    create_gitignore: boolean;
-	    initial_commit: boolean;
-	
-	    static createFrom(source: any = {}) {
-	        return new SetupAction(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.init_git = source["init_git"];
-	        this.create_gitignore = source["create_gitignore"];
-	        this.initial_commit = source["initial_commit"];
 	    }
 	}
 

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   Play, Square, Check, X, Clock, Loader2, ArrowLeft,
   ChevronRight, FileCode, Terminal, TestTube, CheckCircle, XCircle, AlertTriangle,
+  MessageCircleQuestion,
 } from 'lucide-react'
 import { useSessionStore } from '../stores/sessionStore'
 import { useAgentStore } from '../stores/agentStore'
@@ -17,6 +18,7 @@ const statusIcon: Record<TaskStatus, JSX.Element> = {
   completed: <Check size={14} className="text-emerald-400" />,
   failed: <X size={14} className="text-red-400" />,
   cancelled: <X size={14} className="text-zinc-500" />,
+  awaiting_input: <MessageCircleQuestion size={14} className="text-purple-400" />,
 }
 
 export function SessionMonitor() {
@@ -125,12 +127,12 @@ export function SessionMonitor() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(`/sessions/${sessionID}`)}
-            className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] transition-colors"
           >
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-xl font-semibold text-zinc-100">
+            <h1 className="text-xl font-bold font-display text-zinc-100">
               {currentSession?.name || 'Session'}
             </h1>
             <p className="text-xs text-zinc-500 mt-0.5">
@@ -142,7 +144,7 @@ export function SessionMonitor() {
           {!isRunning ? (
             <button
               onClick={() => sessionID && startSession(sessionID)}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-md"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
             >
               <Play size={14} />
               Start
@@ -150,7 +152,7 @@ export function SessionMonitor() {
           ) : (
             <button
               onClick={() => sessionID && stopSession(sessionID)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm rounded-md"
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors"
             >
               <Square size={14} />
               Stop
@@ -162,8 +164,8 @@ export function SessionMonitor() {
       {/* Main content */}
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Task list (left) */}
-        <div className="w-64 xl:w-72 flex-shrink-0 bg-zinc-900 border border-zinc-800 rounded-lg overflow-auto">
-          <div className="p-3 border-b border-zinc-800">
+        <div className="w-64 xl:w-72 flex-shrink-0 rounded-xl bg-[#111114] border border-white/[0.06] overflow-auto">
+          <div className="p-3 border-b border-white/[0.06]">
             <h2 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Tasks</h2>
           </div>
           <div className="p-1.5">
@@ -171,10 +173,10 @@ export function SessionMonitor() {
               <button
                 key={task.id}
                 onClick={() => setSelectedTaskId(task.id)}
-                className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-md text-left text-sm transition-colors ${
+                className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left text-sm transition-colors ${
                   selectedTaskId === task.id
-                    ? 'bg-zinc-800 text-zinc-100'
-                    : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                    ? 'bg-white/[0.06] text-zinc-100'
+                    : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200'
                 }`}
               >
                 {statusIcon[task.status]}
@@ -199,12 +201,12 @@ export function SessionMonitor() {
           ) : (
             <>
               {/* Live logs */}
-              <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg flex flex-col min-h-0">
-                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-zinc-800">
+              <div className="flex-1 rounded-xl bg-[#111114] border border-white/[0.06] flex flex-col min-h-0">
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/[0.06]">
                   <Terminal size={14} className="text-zinc-500" />
                   <span className="text-xs font-medium text-zinc-400">Live Output</span>
                   {selectedTask.status === 'running' && (
-                    <Loader2 size={12} className="text-blue-400 animate-spin ml-auto" />
+                    <Loader2 size={12} className="text-brand-blue animate-spin ml-auto" />
                   )}
                 </div>
                 <div className="flex-1 overflow-auto p-3 font-mono text-xs space-y-0.5">
@@ -229,7 +231,7 @@ export function SessionMonitor() {
 
               {/* Error message for failed tasks */}
               {selectedTask.status === 'failed' && selectedTask.error && (
-                <div className="bg-red-950/30 border border-red-900/50 rounded-lg p-4">
+                <div className="bg-red-950/30 border border-red-900/50 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <AlertTriangle size={14} className="text-red-400" />
                     <span className="text-xs font-medium text-red-400">Task Failed</span>
@@ -245,8 +247,8 @@ export function SessionMonitor() {
                 <div className="flex gap-3">
                   {/* Diff */}
                   {selectedDiff && selectedDiff.total > 0 && (
-                    <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg max-h-48 overflow-auto">
-                      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-zinc-800">
+                    <div className="flex-1 rounded-xl bg-[#111114] border border-white/[0.06] max-h-48 overflow-auto">
+                      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/[0.06]">
                         <FileCode size={14} className="text-zinc-500" />
                         <span className="text-xs font-medium text-zinc-400">
                           Changes ({selectedDiff.total} files)
@@ -271,8 +273,8 @@ export function SessionMonitor() {
 
                   {/* Test results */}
                   {selectedTask.test_passed !== undefined && (
-                    <div className="w-64 bg-zinc-900 border border-zinc-800 rounded-lg">
-                      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-zinc-800">
+                    <div className="w-64 rounded-xl bg-[#111114] border border-white/[0.06]">
+                      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/[0.06]">
                         <TestTube size={14} className="text-zinc-500" />
                         <span className="text-xs font-medium text-zinc-400">Tests</span>
                         {selectedTask.test_passed ? (
@@ -296,14 +298,14 @@ export function SessionMonitor() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleApply(selectedTask.id)}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-md"
+                    className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
                   >
                     <Check size={14} />
                     Apply Changes
                   </button>
                   <button
                     onClick={() => handleReject(selectedTask.id)}
-                    className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm rounded-md"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/[0.06] hover:bg-white/[0.10] text-zinc-300 text-sm rounded-lg transition-colors"
                   >
                     <X size={14} />
                     Reject

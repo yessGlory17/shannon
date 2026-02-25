@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Play, Square, Loader2, MessageSquare, GitCompare } from 'lucide-react'
+import { ArrowLeft, Play, Square, Loader2, MessageSquare, GitCompare, CheckCircle } from 'lucide-react'
 import { useSessionStore } from '../stores/sessionStore'
 import { useAgentStore } from '../stores/agentStore'
 import { useTeamStore } from '../stores/teamStore'
@@ -16,7 +16,7 @@ export function SessionWorkspace() {
   const navigate = useNavigate()
   const {
     currentSession, tasks, logs, diffs,
-    fetchTasks, setCurrentSession, startSession, stopSession, refreshTask,
+    fetchTasks, setCurrentSession, startSession, stopSession, completeSession, refreshTask,
     appendLog, setDiff, loadSessionEvents,
   } = useSessionStore()
   const { agents, fetch: fetchAgents } = useAgentStore()
@@ -79,7 +79,10 @@ export function SessionWorkspace() {
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null
   const completedCount = tasks.filter((t) => t.status === 'completed').length
+  const failedCount = tasks.filter((t) => t.status === 'failed').length
   const isRunning = currentSession?.status === 'running'
+  const hasActiveTasks = tasks.some((t) => t.status === 'running' || t.status === 'queued' || t.status === 'pending')
+  const allTasksDone = tasks.length > 0 && !hasActiveTasks
 
   return (
     <div className="h-full flex flex-col">
@@ -88,21 +91,30 @@ export function SessionWorkspace() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(`/sessions/${sessionID}`)}
-            className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] transition-colors"
             title="Back to planner"
           >
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-lg font-semibold text-zinc-100">
+            <h1 className="text-lg font-bold font-display text-zinc-100">
               {currentSession?.name || 'Workspace'}
             </h1>
             <p className="text-xs text-zinc-500">
               {completedCount}/{tasks.length} tasks
-              {isRunning && (
-                <span className="inline-flex items-center gap-1 ml-2 text-blue-400">
+              {failedCount > 0 && (
+                <span className="text-red-400 ml-1">({failedCount} failed)</span>
+              )}
+              {isRunning && !allTasksDone && (
+                <span className="inline-flex items-center gap-1 ml-2 text-brand-blue">
                   <Loader2 size={10} className="animate-spin" />
                   Running
+                </span>
+              )}
+              {isRunning && allTasksDone && (
+                <span className="inline-flex items-center gap-1 ml-2 text-emerald-400">
+                  <CheckCircle size={10} />
+                  Waiting
                 </span>
               )}
             </p>
@@ -112,19 +124,30 @@ export function SessionWorkspace() {
           {!isRunning ? (
             <button
               onClick={() => sessionID && startSession(sessionID)}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-md transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
             >
               <Play size={14} />
               Start
             </button>
           ) : (
-            <button
-              onClick={() => sessionID && stopSession(sessionID)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm rounded-md transition-colors"
-            >
-              <Square size={14} />
-              Stop
-            </button>
+            <>
+              {allTasksDone && (
+                <button
+                  onClick={() => sessionID && completeSession(sessionID)}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  <CheckCircle size={14} />
+                  Complete
+                </button>
+              )}
+              <button
+                onClick={() => sessionID && stopSession(sessionID)}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors"
+              >
+                <Square size={14} />
+                Stop
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -145,7 +168,7 @@ export function SessionWorkspace() {
         {/* Tabbed Panel (right) */}
         <div className="w-[520px] flex-shrink-0 flex flex-col min-h-0">
           {/* Tab header */}
-          <div className="flex bg-zinc-900 rounded-t-lg border border-b-0 border-zinc-800">
+          <div className="flex bg-[#111114] rounded-t-xl border border-b-0 border-white/[0.06]">
             <button
               onClick={() => setActiveTab('chat')}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors relative ${
@@ -157,7 +180,7 @@ export function SessionWorkspace() {
               <MessageSquare size={13} />
               Chat
               {activeTab === 'chat' && (
-                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-emerald-500 rounded-t" />
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-brand-gradient rounded-t" />
               )}
             </button>
             <button
@@ -176,7 +199,7 @@ export function SessionWorkspace() {
                 </span>
               )}
               {activeTab === 'changes' && (
-                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-emerald-500 rounded-t" />
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-brand-gradient rounded-t" />
               )}
             </button>
           </div>

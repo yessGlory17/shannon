@@ -5,9 +5,9 @@ import { useTeamStore } from '../stores/teamStore'
 import { useAgentStore } from '../stores/agentStore'
 
 const strategyLabels: Record<string, { label: string; color: string }> = {
-  parallel: { label: 'Parallel', color: 'text-blue-400 bg-blue-900/30' },
-  sequential: { label: 'Sequential', color: 'text-amber-400 bg-amber-900/30' },
-  planner: { label: 'Custom', color: 'text-purple-400 bg-purple-900/30' },
+  parallel: { label: 'Parallel', color: 'text-blue-400 bg-blue-500/10' },
+  sequential: { label: 'Sequential', color: 'text-amber-400 bg-amber-500/10' },
+  planner: { label: 'Custom', color: 'text-purple-400 bg-purple-500/10' },
 }
 
 export function TeamList() {
@@ -40,14 +40,14 @@ export function TeamList() {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-xl font-semibold text-zinc-100">Teams</h1>
+          <h1 className="text-xl font-bold font-display text-zinc-100">Teams</h1>
           <p className="text-xs text-zinc-500 mt-0.5">
             Create agent teams with visual workflow editors
           </p>
         </div>
         <button
           onClick={() => navigate('/teams/new')}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-100 hover:bg-white text-zinc-900 text-sm font-medium rounded-md transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm hover:shadow-brand"
         >
           <Plus size={14} />
           New Team
@@ -61,7 +61,7 @@ export function TeamList() {
           </div>
         ) : teams.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-full bg-white/[0.06] flex items-center justify-center mb-4">
               <Users size={20} className="text-zinc-600" />
             </div>
             <p className="text-sm text-zinc-500 mb-1">No teams yet</p>
@@ -70,7 +70,7 @@ export function TeamList() {
             </p>
             <button
               onClick={() => navigate('/teams/new')}
-              className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-md transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-white/[0.06] hover:bg-white/[0.10] text-zinc-300 text-xs rounded-lg transition-colors"
             >
               <Plus size={12} />
               Create Team
@@ -87,7 +87,7 @@ export function TeamList() {
                 <button
                   key={team.id}
                   onClick={() => navigate(`/teams/${team.id}/edit`)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-colors text-left p-4"
+                  className="w-full rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card hover:shadow-card-hover transition-all duration-200 text-left p-4"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -116,7 +116,7 @@ export function TeamList() {
                     </div>
                     <div
                       onClick={(e) => handleDelete(e, team.id)}
-                      className="p-1.5 rounded text-zinc-600 hover:text-red-400 hover:bg-zinc-800 transition-colors ml-2"
+                      className="p-1.5 rounded text-zinc-600 hover:text-red-400 hover:bg-white/[0.06] transition-colors ml-2"
                     >
                       <Trash2 size={14} />
                     </div>

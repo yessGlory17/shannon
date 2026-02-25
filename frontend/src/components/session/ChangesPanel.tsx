@@ -115,7 +115,7 @@ export function ChangesPanel({ task, diff }: ChangesPanelProps) {
 
   if (!task) {
     return (
-      <div className="flex-1 flex flex-col bg-zinc-900 rounded-lg border border-zinc-800">
+      <div className="flex-1 flex flex-col rounded-xl bg-[#111114] border border-white/[0.06]">
         <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm">
           Select a task to view changes
         </div>
@@ -125,8 +125,8 @@ export function ChangesPanel({ task, diff }: ChangesPanelProps) {
 
   if (!diff || diff.total === 0) {
     return (
-      <div className="flex-1 flex flex-col bg-zinc-900 rounded-lg border border-zinc-800">
-        <div className="px-3 py-2 border-b border-zinc-800">
+      <div className="flex-1 flex flex-col rounded-xl bg-[#111114] border border-white/[0.06]">
+        <div className="px-3 py-2 border-b border-white/[0.06]">
           <span className="text-xs font-medium text-zinc-400">Changes</span>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-sm gap-2">
@@ -139,9 +139,9 @@ export function ChangesPanel({ task, diff }: ChangesPanelProps) {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-zinc-900 rounded-lg border border-zinc-800 min-h-0">
+    <div className="flex-1 flex flex-col rounded-xl bg-[#111114] border border-white/[0.06] min-h-0">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-zinc-800 flex items-center justify-between flex-shrink-0">
+      <div className="px-3 py-2 border-b border-white/[0.06] flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-zinc-400">
             {diff.total} file{diff.total !== 1 ? 's' : ''} changed
@@ -158,15 +158,15 @@ export function ChangesPanel({ task, diff }: ChangesPanelProps) {
       {/* Split: file list + diff viewer */}
       <div className="flex-1 flex min-h-0">
         {/* File list */}
-        <div className="w-[140px] flex-shrink-0 border-r border-zinc-800 overflow-auto">
+        <div className="w-[140px] flex-shrink-0 border-r border-white/[0.06] overflow-auto">
           {diff.files.map((f) => (
             <button
               key={f.path}
               onClick={() => { setSelectedFile(f.path); setEditingFile(null) }}
               className={`w-full flex items-center gap-1.5 px-2 py-1.5 text-left text-xs transition-colors ${
                 f.path === selectedFile
-                  ? 'bg-zinc-800 text-zinc-200'
-                  : 'text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300'
+                  ? 'bg-white/[0.06] text-zinc-200'
+                  : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300'
               }`}
             >
               <FileStatusIcon status={f.status} />
@@ -215,7 +215,7 @@ export function ChangesPanel({ task, diff }: ChangesPanelProps) {
 
       {/* Reject reason modal */}
       {rejectTarget && (
-        <div className="border-t border-zinc-800 px-3 py-2 flex-shrink-0">
+        <div className="border-t border-white/[0.06] px-3 py-2 flex-shrink-0">
           <div className="flex items-center gap-2 mb-1.5">
             <Undo2 size={12} className="text-red-400" />
             <span className="text-xs text-zinc-300">
@@ -226,7 +226,7 @@ export function ChangesPanel({ task, diff }: ChangesPanelProps) {
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             placeholder="Explain why this change should be reverted (sent to agent)..."
-            className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 resize-none"
+            className="w-full px-2 py-1.5 bg-white/[0.04] border border-white/[0.08] rounded-lg text-xs text-zinc-300 placeholder:text-zinc-600 input-focus resize-none transition-colors"
             rows={2}
             autoFocus
           />
@@ -289,7 +289,7 @@ function DiffViewer({ file, disabled, onAcceptHunk, onRejectHunk, onAcceptFile, 
           <button
             onClick={onEditFile}
             disabled={disabled}
-            className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors disabled:opacity-50"
+            className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] rounded transition-colors disabled:opacity-50"
             title="Edit file"
           >
             <Pencil size={10} /> Edit
@@ -326,7 +326,7 @@ function DiffViewer({ file, disabled, onAcceptHunk, onRejectHunk, onAcceptFile, 
         ))
       ) : file.diff ? (
         // Fallback: show raw diff if no hunks parsed
-        <pre className="text-[11px] font-mono text-zinc-500 whitespace-pre-wrap p-2 bg-zinc-800/30 rounded overflow-x-auto">
+        <pre className="text-[11px] font-mono text-zinc-500 whitespace-pre-wrap p-2 bg-white/[0.03] rounded-lg overflow-x-auto">
           {file.diff}
         </pre>
       ) : (
@@ -347,9 +347,9 @@ function HunkBlock({ hunk, disabled, onAccept, onReject }: {
   const lines = hunk.content.split('\n')
 
   return (
-    <div className="border border-zinc-800 rounded overflow-hidden">
+    <div className="border border-white/[0.06] rounded-lg overflow-hidden">
       {/* Hunk header */}
-      <div className="flex items-center justify-between bg-zinc-800/50 px-3 py-1">
+      <div className="flex items-center justify-between bg-white/[0.03] px-3 py-1">
         <span className="text-[10px] font-mono text-zinc-500 truncate">{hunk.header}</span>
         <div className="flex items-center gap-0.5 flex-shrink-0">
           <button
@@ -438,7 +438,7 @@ function InlineEditor({ filePath, content, loading, saving, onChange, onSave, on
 
   return (
     <div className="flex-1 flex flex-col min-h-0 h-full">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-zinc-800 flex-shrink-0">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/[0.06] flex-shrink-0">
         <span className="text-xs font-mono text-zinc-400 truncate">{filePath}</span>
         <div className="flex gap-2 flex-shrink-0">
           <button
@@ -450,7 +450,7 @@ function InlineEditor({ filePath, content, loading, saving, onChange, onSave, on
           <button
             onClick={onSave}
             disabled={saving}
-            className="flex items-center gap-1 px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded transition-colors disabled:opacity-50"
+            className="flex items-center gap-1 px-2 py-0.5 bg-brand-gradient hover:opacity-90 text-white text-xs rounded-lg transition-all disabled:opacity-50"
           >
             {saving ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
             Save

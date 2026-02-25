@@ -104,10 +104,21 @@ func ParseHunks(unifiedDiff string) []DiffHunk {
 	return hunks
 }
 
+// excludeDirs lists directories to skip when computing diffs.
+var excludeDirs = []string{
+	".git", "node_modules", ".next", "__pycache__", "vendor",
+	".venv", ".cache", ".claude", ".turbo",
+}
+
 // ComputeDiff compares a task workspace against the original project directory.
 func (dt *DiffTracker) ComputeDiff(originalPath, workspacePath string) (*DiffResult, error) {
-	// Use diff to find changes
-	cmd := exec.Command("diff", "-rq", originalPath, workspacePath)
+	// Use diff to find changes, excluding VCS and dependency directories
+	args := []string{"-rq"}
+	for _, dir := range excludeDirs {
+		args = append(args, "--exclude="+dir)
+	}
+	args = append(args, originalPath, workspacePath)
+	cmd := exec.Command("diff", args...)
 	output, _ := cmd.CombinedOutput() // diff returns exit code 1 when files differ
 
 	result := &DiffResult{}

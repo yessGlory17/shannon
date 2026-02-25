@@ -19,6 +19,9 @@ type Task struct {
 	ResultText   string      `json:"result_text,omitempty"`
 	FilesChanged StringSlice `json:"files_changed" gorm:"type:text"`
 
+	// Agent interaction - set when agent needs user input to continue
+	PendingInputData string `json:"pending_input_data,omitempty" gorm:"type:text"`
+
 	// Test/Build
 	TestPassed  *bool  `json:"test_passed,omitempty"`
 	TestOutput  string `json:"test_output,omitempty"`
