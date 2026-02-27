@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 480" font-family="Inter, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="brand2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="brandSubtle2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.12"/>
+    </linearGradient>
+    <pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="10" cy="10" r="1" fill="#1f1f23"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="480" fill="#09090b" rx="12"/>
+
+  <!-- Window chrome -->
+  <rect x="0" y="0" width="960" height="32" fill="#18181b" rx="12"/>
+  <rect x="0" y="12" width="960" height="20" fill="#18181b"/>
+  <circle cx="20" cy="16" r="6" fill="#ff5f57"/>
+  <circle cx="38" cy="16" r="6" fill="#febc2e"/>
+  <circle cx="56" cy="16" r="6" fill="#28c840"/>
+  <text x="480" y="20" text-anchor="middle" fill="#52525b" font-size="11" font-weight="500">Shannon — Team Editor</text>
+
+  <!-- Header -->
+  <text x="50" y="62" fill="#f4f4f5" font-size="16" font-weight="700" font-family="Nunito, sans-serif">Backend Squad</text>
+  <!-- Strategy badge -->
+  <rect x="740" y="44" width="80" height="28" rx="8" fill="rgba(255,255,255,0.06)"/>
+  <text x="780" y="62" text-anchor="middle" fill="#d4d4d8" font-size="11">Sequential</text>
+  <!-- Save button -->
+  <rect x="832" y="44" width="100" height="28" rx="8" fill="url(#brand2)"/>
+  <text x="882" y="62" text-anchor="middle" fill="white" font-size="11" font-weight="600">Save</text>
+
+  <!-- Agent Sidebar -->
+  <rect x="20" y="80" width="180" height="360" rx="12" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="36" y="104" fill="#a1a1aa" font-size="10" font-weight="600" letter-spacing="0.8">AGENTS</text>
+  <text x="36" y="116" fill="#52525b" font-size="8">Drag onto canvas</text>
+
+  <!-- Agent: Code Writer (on canvas) -->
+  <rect x="30" y="128" width="160" height="44" rx="8" fill="rgba(255,255,255,0.03)"/>
+  <circle cx="46" cy="150" r="8" fill="none" stroke="#3f3f46" stroke-width="1.5"/>
+  <text x="60" y="146" fill="#52525b" font-size="10" font-weight="500">Code Writer</text>
+  <text x="60" y="158" fill="#52525b" font-size="8">opus</text>
+  <text x="178" y="153" text-anchor="end" fill="#52525b" font-size="7">added</text>
+
+  <!-- Agent: Reviewer (on canvas) -->
+  <rect x="30" y="178" width="160" height="44" rx="8" fill="rgba(255,255,255,0.03)"/>
+  <circle cx="46" cy="200" r="8" fill="none" stroke="#3f3f46" stroke-width="1.5"/>
+  <text x="60" y="196" fill="#52525b" font-size="10" font-weight="500">Reviewer</text>
+  <text x="60" y="208" fill="#52525b" font-size="8">sonnet</text>
+  <text x="178" y="203" text-anchor="end" fill="#52525b" font-size="7">added</text>
+
+  <!-- Agent: Tester (available) -->
+  <rect x="30" y="228" width="160" height="44" rx="8" fill="rgba(255,255,255,0.06)"/>
+  <circle cx="46" cy="250" r="8" fill="none" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="60" y="246" fill="#d4d4d8" font-size="10" font-weight="500">Tester</text>
+  <text x="60" y="258" fill="#52525b" font-size="8">haiku</text>
+
+  <!-- Agent: DevOps (available) -->
+  <rect x="30" y="278" width="160" height="44" rx="8" fill="rgba(255,255,255,0.06)"/>
+  <circle cx="46" cy="300" r="8" fill="none" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="60" y="296" fill="#d4d4d8" font-size="10" font-weight="500">DevOps</text>
+  <text x="60" y="308" fill="#52525b" font-size="8">sonnet</text>
+
+  <!-- Canvas -->
+  <rect x="212" y="80" width="728" height="360" rx="12" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <rect x="212" y="80" width="728" height="360" rx="12" fill="url(#dots)"/>
+
+  <!-- Edges -->
+  <line x1="430" y1="220" x2="570" y2="170" stroke="#3f3f46" stroke-width="2"/>
+  <line x1="430" y1="220" x2="570" y2="290" stroke="#3f3f46" stroke-width="2"/>
+  <line x1="710" y1="170" x2="810" y2="230" stroke="#3f3f46" stroke-width="2"/>
+  <line x1="710" y1="290" x2="810" y2="230" stroke="#3f3f46" stroke-width="2"/>
+
+  <!-- Node 1: Code Writer -->
+  <rect x="310" y="190" width="140" height="60" rx="10" fill="#18181b" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <circle cx="332" cy="212" r="8" fill="none" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="346" y="210" fill="#f4f4f5" font-size="11" font-weight="600">Code Writer</text>
+  <rect x="346" y="220" width="42" height="16" rx="4" fill="url(#brand2)"/>
+  <text x="367" y="232" text-anchor="middle" fill="white" font-size="8" font-weight="600">opus</text>
+
+  <!-- Node 2: Reviewer -->
+  <rect x="570" y="140" width="140" height="60" rx="10" fill="#18181b" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <circle cx="592" cy="162" r="8" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="606" y="160" fill="#f4f4f5" font-size="11" font-weight="600">Reviewer</text>
+  <rect x="606" y="170" width="52" height="16" rx="4" fill="#a78bfa"/>
+  <text x="632" y="182" text-anchor="middle" fill="white" font-size="8" font-weight="600">sonnet</text>
+
+  <!-- Node 3: Tester -->
+  <rect x="570" y="260" width="140" height="60" rx="10" fill="#18181b" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <circle cx="592" cy="282" r="8" fill="none" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="606" y="280" fill="#f4f4f5" font-size="11" font-weight="600">Tester</text>
+  <rect x="606" y="290" width="42" height="16" rx="4" fill="#fbbf24"/>
+  <text x="627" y="302" text-anchor="middle" fill="#111" font-size="8" font-weight="600">haiku</text>
+
+  <!-- Node 4: Integration (merge point) -->
+  <rect x="810" y="200" width="100" height="60" rx="10" fill="#18181b" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="860" y="228" text-anchor="middle" fill="#f4f4f5" font-size="11" font-weight="600">Deploy</text>
+  <text x="860" y="244" text-anchor="middle" fill="#52525b" font-size="9">merge</text>
+
+  <!-- Description input -->
+  <rect x="20" y="448" width="920" height="24" rx="6" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="32" y="464" fill="#52525b" font-size="10">Team description (optional)</text>
+</svg>

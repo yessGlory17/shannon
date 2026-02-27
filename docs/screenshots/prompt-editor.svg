@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" font-family="Inter, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="brand3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="520" fill="#09090b" rx="12"/>
+
+  <!-- Window chrome -->
+  <rect x="0" y="0" width="960" height="32" fill="#18181b" rx="12"/>
+  <rect x="0" y="12" width="960" height="20" fill="#18181b"/>
+  <circle cx="20" cy="16" r="6" fill="#ff5f57"/>
+  <circle cx="38" cy="16" r="6" fill="#febc2e"/>
+  <circle cx="56" cy="16" r="6" fill="#28c840"/>
+  <text x="480" y="20" text-anchor="middle" fill="#52525b" font-size="11" font-weight="500">Shannon — Agent Editor — System Prompt</text>
+
+  <!-- Editor Header -->
+  <rect x="20" y="42" width="920" height="32" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1" rx="8"/>
+  <text x="36" y="62" fill="#52525b" font-size="10">System Prompt</text>
+  <text x="580" y="62" fill="#52525b" font-size="9">Supports XML tags, Markdown, and {{variables}}</text>
+  <!-- AI Improve button -->
+  <rect x="830" y="48" width="96" height="22" rx="5" fill="rgba(139,92,246,0.2)" stroke="rgba(139,92,246,0.3)" stroke-width="1"/>
+  <text x="878" y="63" text-anchor="middle" fill="#c4b5fd" font-size="9" font-weight="500">AI Improve</text>
+
+  <!-- AI Improve Banner -->
+  <rect x="20" y="82" width="920" height="32" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.2)" stroke-width="1"/>
+  <text x="36" y="102" fill="rgba(196,181,253,0.8)" font-size="9">Added structured XML sections, clear constraints, chain-of-thought instructions, and output format specification.</text>
+  <!-- Revert button -->
+  <rect x="832" y="88" width="48" height="18" rx="4" fill="rgba(39,39,42,0.8)"/>
+  <text x="856" y="100" text-anchor="middle" fill="#a1a1aa" font-size="8">Revert</text>
+  <!-- Keep button -->
+  <rect x="884" y="88" width="44" height="18" rx="4" fill="rgba(52,211,153,0.15)"/>
+  <text x="906" y="100" text-anchor="middle" fill="#34d399" font-size="8">Keep</text>
+
+  <!-- Monaco Editor Area -->
+  <rect x="20" y="122" width="920" height="340" rx="8" fill="#27272a" stroke="#3f3f46" stroke-width="1"/>
+
+  <!-- Line numbers gutter -->
+  <rect x="20" y="122" width="44" height="340" rx="8" fill="#27272a"/>
+  <text x="56" y="150" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">1</text>
+  <text x="56" y="172" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">2</text>
+  <text x="56" y="194" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">3</text>
+  <text x="56" y="216" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">4</text>
+  <text x="56" y="238" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">5</text>
+  <text x="56" y="260" text-anchor="end" fill="#a1a1aa" font-size="11" font-family="Fira Code, monospace">6</text>
+  <text x="56" y="282" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">7</text>
+  <text x="56" y="304" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">8</text>
+  <text x="56" y="326" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">9</text>
+  <text x="56" y="348" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">10</text>
+  <text x="56" y="370" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">11</text>
+  <text x="56" y="392" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">12</text>
+  <text x="56" y="414" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">13</text>
+  <text x="56" y="436" text-anchor="end" fill="#52525b" font-size="11" font-family="Fira Code, monospace">14</text>
+
+  <!-- Current line highlight -->
+  <rect x="64" y="247" width="876" height="22" fill="rgba(63,63,70,0.25)" rx="0"/>
+
+  <!-- Code lines -->
+  <!-- Line 1: <persona> - Role tag emerald bold -->
+  <text x="72" y="150" fill="#34d399" font-size="12" font-weight="700" font-family="Fira Code, monospace">&lt;persona&gt;</text>
+
+  <!-- Line 2 -->
+  <text x="72" y="172" fill="#d4d4d8" font-size="12" font-family="Fira Code, monospace">You are a senior backend engineer specializing</text>
+
+  <!-- Line 3: text + bold markdown -->
+  <text x="72" y="194" font-size="12" font-family="Fira Code, monospace">
+    <tspan fill="#d4d4d8">in Go and </tspan>
+    <tspan fill="#e4e4e7" font-weight="700">**distributed systems**</tspan>
+    <tspan fill="#d4d4d8">.</tspan>
+  </text>
+
+  <!-- Line 4: </persona> -->
+  <text x="72" y="216" fill="#34d399" font-size="12" font-weight="700" font-family="Fira Code, monospace">&lt;/persona&gt;</text>
+
+  <!-- Line 5: empty -->
+
+  <!-- Line 6: <instructions> - Structural tag cyan bold -->
+  <text x="72" y="260" fill="#22d3ee" font-size="12" font-weight="700" font-family="Fira Code, monospace">&lt;instructions&gt;</text>
+
+  <!-- Line 7: IMPORTANT keyword red + text -->
+  <text x="72" y="282" font-size="12" font-family="Fira Code, monospace">
+    <tspan fill="#f87171" font-weight="700">IMPORTANT:</tspan>
+    <tspan fill="#d4d4d8"> Always write tests first.</tspan>
+  </text>
+
+  <!-- Line 8: list + template var -->
+  <text x="72" y="304" font-size="12" font-family="Fira Code, monospace">
+    <tspan fill="#60a5fa">-</tspan>
+    <tspan fill="#d4d4d8"> Use framework: </tspan>
+    <tspan fill="#fbbf24" font-weight="700">{{framework}}</tspan>
+  </text>
+
+  <!-- Line 9: list + bold -->
+  <text x="72" y="326" font-size="12" font-family="Fira Code, monospace">
+    <tspan fill="#60a5fa">-</tspan>
+    <tspan fill="#d4d4d8"> Follow </tspan>
+    <tspan fill="#e4e4e7" font-weight="700">**clean architecture**</tspan>
+    <tspan fill="#d4d4d8"> patterns</tspan>
+  </text>
+
+  <!-- Line 10: </instructions> -->
+  <text x="72" y="348" fill="#22d3ee" font-size="12" font-weight="700" font-family="Fira Code, monospace">&lt;/instructions&gt;</text>
+
+  <!-- Line 11: empty -->
+
+  <!-- Line 12: <thinking> - Thinking tag violet bold -->
+  <text x="72" y="392" fill="#a78bfa" font-size="12" font-weight="700" font-family="Fira Code, monospace">&lt;thinking&gt;</text>
+
+  <!-- Line 13 -->
+  <text x="72" y="414" fill="#d4d4d8" font-size="12" font-family="Fira Code, monospace">Reason step by step before writing code.</text>
+
+  <!-- Line 14: </thinking> -->
+  <text x="72" y="436" fill="#a78bfa" font-size="12" font-weight="700" font-family="Fira Code, monospace">&lt;/thinking&gt;</text>
+
+  <!-- Cursor on line 6 -->
+  <rect x="218" y="249" width="2" height="16" fill="#34d399" opacity="0.8"/>
+
+  <!-- Autocomplete popup -->
+  <rect x="220" y="268" width="240" height="116" rx="8" fill="#18181b" stroke="#3f3f46" stroke-width="1"/>
+  <!-- Selected item -->
+  <rect x="224" y="272" width="232" height="24" rx="4" fill="rgba(52,211,153,0.08)"/>
+  <rect x="232" y="276" width="14" height="14" rx="3" fill="#22d3ee"/>
+  <text x="239" y="287" text-anchor="middle" fill="#111" font-size="7" font-weight="700">S</text>
+  <text x="254" y="288" fill="#f4f4f5" font-size="11" font-family="Fira Code, monospace">constraints</text>
+  <text x="448" y="288" text-anchor="end" fill="#52525b" font-size="8">[Structure]</text>
+
+  <!-- Item 2 -->
+  <rect x="232" y="300" width="14" height="14" rx="3" fill="#38bdf8"/>
+  <text x="239" y="311" text-anchor="middle" fill="#111" font-size="7" font-weight="700">C</text>
+  <text x="254" y="312" fill="#a1a1aa" font-size="11" font-family="Fira Code, monospace">context</text>
+  <text x="448" y="312" text-anchor="end" fill="#52525b" font-size="8">[Context]</text>
+
+  <!-- Item 3 -->
+  <rect x="232" y="324" width="14" height="14" rx="3" fill="#f472b6"/>
+  <text x="239" y="335" text-anchor="middle" fill="#111" font-size="7" font-weight="700">A</text>
+  <text x="254" y="336" fill="#a1a1aa" font-size="11" font-family="Fira Code, monospace">code</text>
+  <text x="448" y="336" text-anchor="end" fill="#52525b" font-size="8">[Artifact]</text>
+
+  <!-- Item 4 -->
+  <rect x="232" y="348" width="14" height="14" rx="3" fill="#a78bfa"/>
+  <text x="239" y="359" text-anchor="middle" fill="#111" font-size="7" font-weight="700">T</text>
+  <text x="254" y="360" fill="#a1a1aa" font-size="11" font-family="Fira Code, monospace">chain-of-thought</text>
+  <text x="448" y="360" text-anchor="end" fill="#52525b" font-size="8">[Pattern]</text>
+
+  <!-- Tag Legend Bar -->
+  <rect x="20" y="470" width="920" height="34" rx="8" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <!-- Role -->
+  <circle cx="48" cy="487" r="4" fill="#34d399"/>
+  <text x="58" y="491" fill="#34d399" font-size="9">Role</text>
+  <!-- Structure -->
+  <circle cx="118" cy="487" r="4" fill="#22d3ee"/>
+  <text x="128" y="491" fill="#22d3ee" font-size="9">Structure</text>
+  <!-- Context -->
+  <circle cx="210" cy="487" r="4" fill="#38bdf8"/>
+  <text x="220" y="491" fill="#38bdf8" font-size="9">Context</text>
+  <!-- Tool -->
+  <circle cx="292" cy="487" r="4" fill="#fbbf24"/>
+  <text x="302" y="491" fill="#fbbf24" font-size="9">Tool</text>
+  <!-- Thinking -->
+  <circle cx="358" cy="487" r="4" fill="#a78bfa"/>
+  <text x="368" y="491" fill="#a78bfa" font-size="9">Thinking</text>
+  <!-- Artifact -->
+  <circle cx="446" cy="487" r="4" fill="#f472b6"/>
+  <text x="456" y="491" fill="#f472b6" font-size="9">Artifact</text>
+</svg>

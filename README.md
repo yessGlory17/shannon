@@ -5,7 +5,7 @@
 <h1 align="center">Shannon</h1>
 
 <p align="center">
-  <em>A personal orchestration tool for Claude Code agents</em>
+  <strong>AI Agent Workflow Orchestration Platform for Claude Code</strong>
 </p>
 
 <p align="center">
@@ -18,50 +18,115 @@
 
 ---
 
-Shannon is a desktop app that lets you manage **multiple Claude Code instances** working together on your projects. Instead of running one Claude at a time, you create agents with different roles, organize them into teams, and let them tackle tasks in parallel — then review everything before it touches your codebase.
+Create agents, organize them into teams, plan tasks with AI, and monitor execution in real-time. All powered by Claude Code.
 
-Named after [Claude Shannon](https://en.wikipedia.org/wiki/Claude_Shannon), the father of information theory. The connection felt right.
+Named after [Claude Shannon](https://en.wikipedia.org/wiki/Claude_Shannon), the father of information theory.
 
 > **Note:** This is a hobby project. Built for personal use, shared in case others find it useful.
 
-## What it does
+---
 
-**The core loop is simple:** Plan tasks → Assign agents → Execute → Review changes → Apply.
+## Dashboard
 
-Shannon sits between you and your Claude Code CLI. You define agents with specific system prompts and tool permissions, group them into teams, then point them at your project. Shannon handles the rest — spinning up isolated workspaces, managing execution order, and presenting you with a clean diff review before anything changes.
+Real-time metrics, agent performance, task analytics, and activity feeds — all at a glance.
 
-### Agents & Teams
+<p align="center">
+  <img src="docs/screenshots/dashboard.svg" alt="Dashboard" width="100%" />
+</p>
 
-Create agents with different specializations. A frontend agent, a backend agent, a test writer — each with their own system prompt, model preference, and allowed tools. Then organize them into teams with one of three execution strategies:
+- **Stat Cards** — Project, Agent, Team, and Session counts at a glance
+- **Live Running Tasks** — See what's actively executing right now
+- **Charts** — Task status distribution, session overview, success rate gauge, code review stats
+- **Completion Trend** — Track task completion velocity over time
+- **Agent Leaderboard** — Performance metrics and model distribution
+- **Recent Activity** — Latest sessions and active tasks feed
 
-- **Parallel** — all agents work simultaneously
-- **Sequential** — agents chain one after another
-- **Custom** — you draw the execution graph on a visual canvas
+---
 
-### Planning
+## Visual Team Builder
 
-Describe what you want to accomplish. Shannon uses Claude to break your goal into concrete tasks, figures out dependencies, and assigns them to your agents. You can edit everything before hitting start.
+Drag and drop agents onto the canvas, connect them to define execution flow. Choose from parallel, sequential, or fully custom strategies.
 
-There's also a prompt improver that helps refine agent system prompts — useful when you're not sure how to describe a specialization.
+<p align="center">
+  <img src="docs/screenshots/team-editor.svg" alt="Team Editor" width="100%" />
+</p>
 
-### Execution & Monitoring
+- **Drag & Drop Canvas** — Powered by ReactFlow for smooth interactions
+- **3 Strategy Presets** — Parallel (all at once), Sequential (chained), or Custom (draw your own DAG)
+- **Multi-Model Teams** — Combine Opus, Sonnet, and Haiku agents in a single workflow
+- **Visual Edge Editing** — Click to connect, click to remove
 
-Once a session starts, Shannon creates isolated workspace copies of your project for each task. You can watch execution in real-time through a DAG visualization that shows task status, dependencies, and progress. A live chat view streams Claude's output as it works.
+---
 
-### Code Review
+## Prompt Editor
 
-This is where Shannon earns its keep. Every change goes through a diff review:
+A purpose-built Monaco code editor for crafting Claude system prompts. Semantic syntax highlighting, intelligent autocomplete, and one-click AI improvement.
 
-- **Hunk-level** — accept or reject individual code chunks
-- **File-level** — approve or reject entire files
-- **Feedback loop** — reject with a reason, and Shannon sends your feedback back to Claude for iteration
-- **Inline editing** — modify workspace files directly in the built-in Monaco editor
+<p align="center">
+  <img src="docs/screenshots/prompt-editor.svg" alt="Prompt Editor" width="100%" />
+</p>
 
-Nothing touches your project until you explicitly approve it.
+- **Semantic Tag Coloring** — 6 categories with distinct colors: Role (emerald), Structure (cyan), Context (sky), Tool (amber), Thinking (violet), Artifact (pink)
+- **Smart Autocomplete** — XML tag snippets, `{{variable}}` suggestions, auto-closing tag detection with stack-based matching
+- **Hover Documentation** — Hover over any tag name for category and description
+- **AI Improve** — One-click prompt enhancement via Claude with explanation, Revert/Keep workflow
+- **Full Monarch Tokenizer** — Markdown headings, bold/italic, lists, code blocks, `IMPORTANT:` keywords, template variables — all properly highlighted
+- **Custom Theme** — `claude-zinc-dark` with bracket pair colorization and emerald cursor
 
-### MCP Integration
+---
 
-Browse and install MCP servers from the [Smithery](https://smithery.ai/) registry, or configure your own. Attach them to agents to extend their capabilities — web browsing, database access, API integrations, whatever you need.
+## Session Workspace
+
+Watch your task dependency graph execute in real-time. Chat with agents, review code changes, and manage workflow — all in one split view.
+
+<p align="center">
+  <img src="docs/screenshots/workspace.svg" alt="Session Workspace" width="100%" />
+</p>
+
+- **DAG View** — Interactive task dependency graph with live status updates (completed, running, pending)
+- **Live Chat** — Stream agent output as it works, see tool usage in real-time
+- **Changes Panel** — Review code diffs with file-level +/-/~ indicators
+- **Real-Time Events** — Wails event streaming with 15s polling fallback
+- **Session Controls** — Start, Stop, Complete from the workspace header
+
+---
+
+## AI Task Planner
+
+Describe your goal in natural language. The AI analyzes your workspace structure and proposes an optimal task breakdown with dependencies.
+
+- **Workspace-Aware** — Analyzes your codebase structure before planning
+- **Auto-Dependencies** — Automatically resolves task ordering
+- **Smart Assignment** — Maps tasks to the most suitable agents or teams
+- **Accept & Iterate** — Review proposed tasks, re-plan if needed, then accept
+
+---
+
+## All Features
+
+| Feature | Description |
+|---------|-------------|
+| **Custom Agents** | Create agents with specific models (Opus, Sonnet, Haiku), system prompts, tool permissions, and MCP server connections |
+| **Team Workflows** | Organize agents into teams with visual DAG editor — parallel, sequential, or custom execution |
+| **MCP Servers** | Connect to Model Context Protocol servers with JSON editor, health checks, and import from Claude |
+| **Sessions & Tasks** | Task queues with dependency graphs, retry policies, and automatic test execution |
+| **Project Workspaces** | Link repos, configure build/test commands, and manage CLAUDE.md context files |
+| **Encrypted Vault** | AES-256 encrypted storage for API keys and environment variables — injected at runtime, never exposed |
+| **Code Review** | Hunk-level and file-level diff review with feedback loop and inline Monaco editing |
+| **Prompt Improver** | AI-powered system prompt enhancement with explanation and revert capability |
+
+---
+
+## How It Works
+
+```
+1. Add Workspace     →  Link your project, configure build/test commands
+2. Create Agents     →  Specialized agents with models, prompts, and tools
+3. Build Teams       →  Organize agents with visual DAG workflows
+4. Launch Session    →  Plan tasks with AI, execute, monitor in real-time
+```
+
+---
 
 ## Tech Stack
 
@@ -70,10 +135,13 @@ Browse and install MCP servers from the [Smithery](https://smithery.ai/) registr
 | Desktop shell | [Wails v2](https://wails.io/) (Go + WebView) |
 | Backend | Go 1.23, SQLite (GORM) |
 | Frontend | React 18, TypeScript, Tailwind CSS |
-| Code editor | Monaco Editor |
+| Code editor | Monaco Editor (custom claude-prompt language) |
 | Graph viz | React Flow (XYFlow) + Dagre |
-| State | Zustand |
+| State | Zustand (granular selectors) |
+| Virtualization | TanStack Virtual (1000+ log entries) |
 | AI engine | Claude Code CLI |
+
+---
 
 ## Prerequisites
 
@@ -105,39 +173,27 @@ wails build
 shannon/
 ├── backend/
 │   ├── claude/        # Claude Code CLI integration
-│   ├── config/        # App configuration
+│   ├── config/        # App configuration & encrypted vault
 │   ├── models/        # Data models (Agent, Team, Session, Task...)
-│   ├── services/      # Business logic (TaskEngine, Planner, DiffTracker...)
+│   ├── services/      # Business logic (TaskEngine, Planner, DiffTracker, PromptImprover...)
 │   └── store/         # SQLite database operations
 ├── frontend/
 │   ├── src/
-│   │   ├── assets/    # Logo, fonts
-│   │   ├── components/# Shared UI components
-│   │   ├── pages/     # Dashboard, Agents, Teams, Sessions, Workspace...
-│   │   ├── stores/    # Zustand state stores
+│   │   ├── components/
+│   │   │   ├── agents/   # Agent editor, ClaudePromptEditor, steps
+│   │   │   ├── chat/     # Chat components
+│   │   │   ├── dashboard/# Stat cards, charts, leaderboard
+│   │   │   ├── layout/   # AppShell, Sidebar
+│   │   │   ├── mcp/      # MCP server management
+│   │   │   ├── session/  # DAGView, ChatPanel, ChangesPanel
+│   │   │   └── team/     # TeamAgentNode (ReactFlow)
+│   │   ├── pages/     # Dashboard, Agents, Teams, Sessions, Workspace, Monitor...
+│   │   ├── stores/    # Zustand state (session, agent, team, project)
 │   │   └── types/     # TypeScript type definitions
 │   └── index.html
 ├── build/             # App icons and build assets
 ├── app.go             # Wails bindings (all exposed methods)
 └── main.go            # Entry point
-```
-
-## How it works, roughly
-
-```
-You
- │
- ├─ Define agents (system prompt, model, tools, MCP servers)
- ├─ Create a team (parallel / sequential / custom graph)
- ├─ Start a session on a project
- │
- ├─ Shannon plans tasks (or you write them manually)
- ├─ Each task gets an isolated workspace (copy of your project)
- ├─ Claude Code CLI runs in each workspace
- │
- ├─ You review diffs (hunk by hunk or file by file)
- ├─ Reject with feedback → Claude iterates
- └─ Accept → changes applied to your project
 ```
 
 ## Limitations

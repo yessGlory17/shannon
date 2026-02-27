@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" font-family="Inter, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="brand" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="brandSubtle" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.12"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="540" fill="#09090b" rx="12"/>
+
+  <!-- Window chrome -->
+  <rect x="0" y="0" width="960" height="32" fill="#18181b" rx="12"/>
+  <rect x="0" y="12" width="960" height="20" fill="#18181b"/>
+  <circle cx="20" cy="16" r="6" fill="#ff5f57"/>
+  <circle cx="38" cy="16" r="6" fill="#febc2e"/>
+  <circle cx="56" cy="16" r="6" fill="#28c840"/>
+  <text x="480" y="20" text-anchor="middle" fill="#52525b" font-size="11" font-weight="500">Shannon — Dashboard</text>
+
+  <!-- Sidebar -->
+  <rect x="0" y="32" width="180" height="508" fill="#111114"/>
+  <line x1="180" y1="32" x2="180" y2="540" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+  <!-- Logo area -->
+  <rect x="0" y="32" width="180" height="52" fill="#111114"/>
+  <line x1="0" y1="84" x2="180" y2="84" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <circle cx="30" cy="58" r="14" fill="url(#brandSubtle)" stroke="url(#brand)" stroke-width="1.5" stroke-opacity="0.35"/>
+  <rect x="24" y="53" width="12" height="4" rx="2" fill="url(#brand)" transform="rotate(0 30 58)"/>
+  <rect x="24" y="53" width="12" height="4" rx="2" fill="url(#brand)" transform="rotate(60 30 58)"/>
+  <rect x="24" y="53" width="12" height="4" rx="2" fill="url(#brand)" transform="rotate(120 30 58)"/>
+  <text x="52" y="55" fill="#f4f4f5" font-size="12" font-weight="700" font-family="Nunito, sans-serif">Shannon</text>
+  <text x="52" y="67" fill="#52525b" font-size="8" font-weight="500">for Claude Code</text>
+
+  <!-- Nav items -->
+  <rect x="8" y="94" width="164" height="32" rx="8" fill="url(#brandSubtle)"/>
+  <rect x="162" y="101" width="3" height="14" rx="2" fill="url(#brand)" opacity="0.7"/>
+  <text x="38" y="114" fill="#f4f4f5" font-size="11" font-weight="500">Dashboard</text>
+  <text x="38" y="146" fill="#52525b" font-size="11">Workspaces</text>
+  <text x="38" y="170" fill="#52525b" font-size="11">Agents</text>
+  <text x="38" y="194" fill="#52525b" font-size="11">MCP Servers</text>
+  <text x="38" y="218" fill="#52525b" font-size="11">Teams</text>
+  <text x="38" y="242" fill="#52525b" font-size="11">Sessions</text>
+
+  <!-- Main content area -->
+  <!-- Header -->
+  <text x="200" y="62" fill="#f4f4f5" font-size="18" font-weight="700" font-family="Nunito, sans-serif">Dashboard</text>
+  <text x="880" y="62" text-anchor="end" fill="#52525b" font-size="10">Auto-refreshes every 5m</text>
+
+  <!-- Stat Cards Row -->
+  <rect x="200" y="76" width="175" height="70" rx="10" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="216" y="96" fill="#52525b" font-size="9" text-transform="uppercase" letter-spacing="0.5">PROJECTS</text>
+  <text x="216" y="128" fill="#f4f4f5" font-size="26" font-weight="800" font-family="Nunito, sans-serif">3</text>
+
+  <rect x="387" y="76" width="175" height="70" rx="10" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="403" y="96" fill="#52525b" font-size="9">AGENTS</text>
+  <text x="403" y="128" fill="#f4f4f5" font-size="26" font-weight="800" font-family="Nunito, sans-serif">8</text>
+
+  <rect x="574" y="76" width="175" height="70" rx="10" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="590" y="96" fill="#52525b" font-size="9">TEAMS</text>
+  <text x="590" y="128" fill="#f4f4f5" font-size="26" font-weight="800" font-family="Nunito, sans-serif">4</text>
+
+  <rect x="761" y="76" width="175" height="70" rx="10" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="777" y="96" fill="#52525b" font-size="9">SESSIONS</text>
+  <text x="777" y="128" fill="#f4f4f5" font-size="26" font-weight="800" font-family="Nunito, sans-serif">12</text>
+
+  <!-- Running Tasks Banner -->
+  <rect x="200" y="158" width="736" height="36" rx="10" fill="url(#brandSubtle)" stroke="rgba(96,165,250,0.15)" stroke-width="1"/>
+  <circle cx="220" cy="176" r="6" fill="none" stroke="#60a5fa" stroke-width="2" stroke-dasharray="12 20"/>
+  <text x="234" y="180" fill="#60a5fa" font-size="12" font-weight="600">3 tasks running</text>
+
+  <!-- Overview Section Label -->
+  <text x="200" y="218" fill="#52525b" font-size="9" font-weight="600" letter-spacing="1">OVERVIEW</text>
+
+  <!-- Charts Row -->
+  <!-- Pie 1: Task Status -->
+  <rect x="200" y="228" width="175" height="150" rx="10" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="216" y="248" fill="#52525b" font-size="9">TASK STATUS</text>
+  <circle cx="288" cy="310" r="36" fill="none" stroke="#22c55e" stroke-width="10" stroke-dasharray="158 226" stroke-dashoffset="0" transform="rotate(-90 288 310)"/>
+  <circle cx="288" cy="310" r="36" fill="none" stroke="#60a5fa" stroke-width="10" stroke-dasharray="68 226" stroke-dashoffset="-158" transform="rotate(-90 288 310)"/>
+  <text x="260" y="368" fill="#22c55e" font-size="8">Done 70%</text>
+  <text x="308" y="368" fill="#60a5fa" font-size="8">Active 30%</text>
+
+  <!-- Pie 2: Sessions -->
+  <rect x="387" y="228" width="175" height="150" rx="10" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="403" y="248" fill="#52525b" font-size="9">SESSIONS</text>
+  <circle cx="475" cy="310" r="36" fill="none" stroke="#34d399" stroke-width="10" stroke-dasharray="113 226" stroke-dashoffset="0" transform="rotate(-90 475 310)"/>
+  <circle cx="475" cy="310" r="36" fill="none" stroke="#a78bfa" stroke-width="10" stroke-dasharray="72 226" stroke-dashoffset="-113" transform="rotate(-90 475 310)"/>
+  <text x="445" y="368" fill="#34d399" font-size="8">Done 50%</text>
+  <text x="493" y="368" fill="#a78bfa" font-size="8">Active 32%</text>
+
+  <!-- Gauge: Success Rate -->
+  <rect x="574" y="228" width="175" height="150" rx="10" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="590" y="248" fill="#52525b" font-size="9">SUCCESS RATE</text>
+  <path d="M 618 340 A 44 44 0 0 1 706 340" fill="none" stroke="#1f1f23" stroke-width="8" stroke-linecap="round"/>
+  <path d="M 618 340 A 44 44 0 0 1 700 312" fill="none" stroke="url(#brand)" stroke-width="8" stroke-linecap="round"/>
+  <text x="662" y="338" text-anchor="middle" fill="#f4f4f5" font-size="18" font-weight="700" font-family="Nunito, sans-serif">87%</text>
+
+  <!-- Code Review -->
+  <rect x="761" y="228" width="175" height="150" rx="10" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="777" y="248" fill="#52525b" font-size="9">CODE REVIEW</text>
+  <text x="777" y="274" fill="#a1a1aa" font-size="10">Tests Passed</text>
+  <text x="920" y="274" text-anchor="end" fill="#34d399" font-size="10" font-weight="600">24/28</text>
+  <rect x="777" y="280" width="143" height="4" rx="2" fill="#1f1f23"/>
+  <rect x="777" y="280" width="122" height="4" rx="2" fill="#34d399"/>
+  <text x="777" y="306" fill="#a1a1aa" font-size="10">Files Changed</text>
+  <text x="920" y="306" text-anchor="end" fill="#fbbf24" font-size="10" font-weight="600">47</text>
+
+  <!-- Completion Trend -->
+  <rect x="200" y="390" width="736" height="130" rx="10" fill="#111114" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="216" y="412" fill="#52525b" font-size="9">COMPLETION TREND</text>
+  <polyline points="216,500 290,490 364,478 438,470 512,475 586,458 660,448 734,435 808,426 882,418 920,410" fill="none" stroke="url(#brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="216,500 290,490 364,478 438,470 512,475 586,458 660,448 734,435 808,426 882,418 920,410 920,510 216,510" fill="url(#brand)" opacity="0.06"/>
+  <circle cx="920" cy="410" r="4" fill="#60a5fa"/>
+</svg>
