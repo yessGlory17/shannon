@@ -206,9 +206,3 @@ shannon/
 ## License
 
 MIT
-
----
-
-<p align="center">
-  <sub>Built with curiosity and too many Claude API calls.</sub>
-</p>
