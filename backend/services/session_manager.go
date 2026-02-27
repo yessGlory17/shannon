@@ -1,85 +1,58 @@
 package services
 
 import (
-	"agent-workflow/backend/models"
 	"agent-workflow/backend/store"
 	"fmt"
-	"os/exec"
-	"path/filepath"
 )
 
 // SessionManager handles session lifecycle and change application.
 type SessionManager struct {
-	sessions   *store.SessionStore
-	tasks      *store.TaskStore
-	projectMgr *ProjectManager
+	sessions    *store.SessionStore
+	tasks       *store.TaskStore
+	projects    *store.ProjectStore
+	projectMgr  *ProjectManager
+	diffTracker *DiffTracker
 }
 
-func NewSessionManager(sessions *store.SessionStore, tasks *store.TaskStore, projectMgr *ProjectManager) *SessionManager {
+func NewSessionManager(sessions *store.SessionStore, tasks *store.TaskStore, projects *store.ProjectStore, projectMgr *ProjectManager, diffTracker *DiffTracker) *SessionManager {
 	return &SessionManager{
-		sessions:   sessions,
-		tasks:      tasks,
-		projectMgr: projectMgr,
+		sessions:    sessions,
+		tasks:       tasks,
+		projects:    projects,
+		projectMgr:  projectMgr,
+		diffTracker: diffTracker,
 	}
 }
 
-// ApplyTaskChanges copies the changed files from a task workspace back to the original project.
+// ApplyTaskChanges is a no-op since agents work directly on the project directory.
+// Changes are already in place.
 func (sm *SessionManager) ApplyTaskChanges(taskID string, projectPath string) error {
-	task, err := sm.tasks.GetByID(taskID)
-	if err != nil {
-		return fmt.Errorf("task not found: %w", err)
-	}
-	if task.WorkspacePath == "" {
-		return fmt.Errorf("task has no workspace")
-	}
-	if task.Status != models.TaskStatusCompleted {
-		return fmt.Errorf("can only apply changes from completed tasks")
-	}
-
-	// Copy changed files back to project using rsync
-	cmd := exec.Command("rsync", "-a", "--delete",
-		task.WorkspacePath+"/",
-		projectPath+"/",
-	)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("apply changes: %w", err)
-	}
-
 	return nil
 }
 
-// ApplySpecificFiles copies only specific files from workspace to project.
+// ApplySpecificFiles is a no-op since agents work directly on the project directory.
 func (sm *SessionManager) ApplySpecificFiles(taskID string, projectPath string, files []string) error {
-	task, err := sm.tasks.GetByID(taskID)
-	if err != nil {
-		return fmt.Errorf("task not found: %w", err)
-	}
-	if task.WorkspacePath == "" {
-		return fmt.Errorf("task has no workspace")
-	}
-
-	for _, file := range files {
-		src := filepath.Join(task.WorkspacePath, file)
-		dst := filepath.Join(projectPath, file)
-
-		cmd := exec.Command("cp", "-a", src, dst)
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("copy %s: %w", file, err)
-		}
-	}
-
 	return nil
 }
 
-// RejectTaskChanges cleans up the workspace for a rejected task.
+// RejectTaskChanges reverts all uncommitted changes in the project directory using git.
 func (sm *SessionManager) RejectTaskChanges(taskID string) error {
 	task, err := sm.tasks.GetByID(taskID)
 	if err != nil {
 		return fmt.Errorf("task not found: %w", err)
 	}
-	if task.WorkspacePath == "" {
+
+	projectPath := task.WorkspacePath
+	if projectPath == "" {
 		return nil
 	}
 
-	return sm.projectMgr.CleanupWorkspace(task.SessionID, task.ID)
+	// Revert all uncommitted changes for files this task changed
+	for _, filePath := range task.FilesChanged {
+		if err := sm.diffTracker.RevertFile(projectPath, filePath); err != nil {
+			return fmt.Errorf("revert %s: %w", filePath, err)
+		}
+	}
+
+	return nil
 }

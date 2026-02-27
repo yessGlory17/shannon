@@ -1,22 +1,61 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FolderOpen, Bot, Users, Play, Zap, ChevronRight } from 'lucide-react'
-import type { DashboardStats } from '../types'
+import { ChevronRight, Activity, BarChart3, Bot, Users } from 'lucide-react'
+import type { DashboardDetails } from '../types'
+
+import { StatCards } from '../components/dashboard/StatCards'
+import { RunningTasksBanner } from '../components/dashboard/RunningTasksBanner'
+import { TaskStatusChart } from '../components/dashboard/TaskStatusChart'
+import { SessionStatusChart } from '../components/dashboard/SessionStatusChart'
+import { TaskSuccessGauge } from '../components/dashboard/TaskSuccessGauge'
+import { CompletionTrendChart } from '../components/dashboard/CompletionTrendChart'
+import { AgentLeaderboard } from '../components/dashboard/AgentLeaderboard'
+import { ModelDistributionChart } from '../components/dashboard/ModelDistributionChart'
+import { RecentSessionsList } from '../components/dashboard/RecentSessionsList'
+import { ActiveTasksList } from '../components/dashboard/ActiveTasksList'
+import { CodeReviewCard } from '../components/dashboard/CodeReviewCard'
+import { TeamActivityChart } from '../components/dashboard/TeamActivityChart'
+import { ProjectActivityChart } from '../components/dashboard/ProjectActivityChart'
 
 export function Dashboard() {
   const navigate = useNavigate()
-  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [details, setDetails] = useState<DashboardDetails | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    window.go?.main?.App?.GetDashboardStats?.().then(setStats).catch(console.error)
-  }, [])
+    let mounted = true
+    let interval: ReturnType<typeof setInterval> | null = null
 
-  const cards = [
-    { label: 'Workspaces', count: stats?.project_count ?? 0, icon: FolderOpen, path: '/projects', color: 'text-blue-400', iconBg: 'bg-blue-400/10', cardGlow: 'from-blue-500/[0.06]' },
-    { label: 'Agents', count: stats?.agent_count ?? 0, icon: Bot, path: '/agents', color: 'text-emerald-400', iconBg: 'bg-emerald-400/10', cardGlow: 'from-emerald-500/[0.06]' },
-    { label: 'Teams', count: stats?.team_count ?? 0, icon: Users, path: '/teams', color: 'text-purple-400', iconBg: 'bg-purple-400/10', cardGlow: 'from-purple-500/[0.06]' },
-    { label: 'Sessions', count: stats?.session_count ?? 0, icon: Play, path: '/sessions', color: 'text-amber-400', iconBg: 'bg-amber-400/10', cardGlow: 'from-amber-500/[0.06]' },
-  ]
+    const load = () => {
+      window.go?.main?.App?.GetDashboardDetails?.()
+        .then((d) => { if (mounted) setDetails(d) })
+        .catch(console.error)
+        .finally(() => { if (mounted) setLoading(false) })
+    }
+
+    const startPolling = () => {
+      if (interval) clearInterval(interval)
+      interval = setInterval(load, 300000)
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (interval) { clearInterval(interval); interval = null }
+      } else {
+        load()
+        startPolling()
+      }
+    }
+
+    load()
+    startPolling()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      mounted = false
+      if (interval) clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [])
 
   const steps = [
     { label: 'Add a workspace to work on', path: '/projects' },
@@ -25,65 +64,127 @@ export function Dashboard() {
     { label: 'Start a session and assign tasks', path: '/sessions' },
   ]
 
-  return (
-    <div className="w-full">
-      <h1 className="text-2xl font-bold font-display text-zinc-100 mb-6">Dashboard</h1>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        {cards.map((card) => {
-          const Icon = card.icon
-          return (
-            <button
-              key={card.label}
-              onClick={() => navigate(card.path)}
-              className={`bg-gradient-to-br ${card.cardGlow} to-transparent bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] rounded-xl p-5 text-left shadow-card hover:shadow-card-hover transition-all duration-200`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className={`${card.iconBg} w-9 h-9 rounded-full flex items-center justify-center`}>
-                  <Icon size={18} className={card.color} />
-                </div>
-                <span className="text-2xl font-semibold text-zinc-100">{card.count}</span>
-              </div>
-              <p className="text-sm text-zinc-400">{card.label}</p>
-            </button>
-          )
-        })}
+  if (loading) {
+    return (
+      <div className="w-full space-y-6">
+        <h1 className="text-2xl font-bold font-display text-zinc-100">Dashboard</h1>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-[#111114] border border-white/[0.06] rounded-xl p-5 h-[100px]" />
+          ))}
+        </div>
+        <div className="bg-[#111114] border border-white/[0.06] rounded-xl p-5 h-[60px]" />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-[#111114] border border-white/[0.06] rounded-xl p-5 h-[280px]" />
+          ))}
+        </div>
       </div>
+    )
+  }
 
-      {/* Running tasks */}
-      <div className="mb-8">
-        <div className="relative overflow-hidden bg-[#111114] border border-white/[0.06] rounded-xl p-4 shadow-card">
-          <div className="absolute inset-0 bg-brand-gradient opacity-[0.04] pointer-events-none" />
-          <div className="relative flex items-center gap-3">
-            <div className="bg-amber-400/10 w-9 h-9 rounded-full flex items-center justify-center">
-              <Zap size={16} className="text-amber-400" />
-            </div>
-            <div>
-              <span className="text-xs text-zinc-500 block">Running Tasks</span>
-              <p className="text-lg font-semibold text-zinc-100">{stats?.running_tasks ?? 0}</p>
-            </div>
-          </div>
+  return (
+    <div className="w-full space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold font-display text-zinc-100">Dashboard</h1>
+        <div className="flex items-center gap-1.5 text-xs text-zinc-600">
+          <Activity size={12} />
+          <span>Auto-refreshes every 5m</span>
         </div>
       </div>
 
-      <div className="bg-[#111114] border border-white/[0.06] rounded-xl p-6 shadow-card">
-        <h2 className="text-lg font-display font-semibold text-zinc-200 mb-4">Quick Start</h2>
-        <div className="space-y-2">
+      {/* Row 1: Stat Cards */}
+      <StatCards
+        projectCount={details?.project_count ?? 0}
+        agentCount={details?.agent_count ?? 0}
+        teamCount={details?.team_count ?? 0}
+        sessionCount={details?.session_count ?? 0}
+      />
+
+      {/* Row 2: Running Tasks Banner */}
+      <RunningTasksBanner count={details?.running_tasks ?? 0} />
+
+      {/* Row 3: Task & Session Charts */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <BarChart3 size={14} className="text-zinc-500" />
+          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Overview</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <TaskStatusChart data={details?.task_status_dist ?? []} />
+          <SessionStatusChart data={details?.session_status_dist ?? []} />
+          <TaskSuccessGauge rate={details?.task_success_rate ?? 0} />
+          <CodeReviewCard data={details?.code_review ?? null} />
+        </div>
+      </div>
+
+      {/* Row 4: Completion Trend */}
+      <CompletionTrendChart data={details?.task_completion_trend ?? []} />
+
+      {/* Row 5: Agent Performance */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Bot size={14} className="text-zinc-500" />
+          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Agent Performance</h2>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            <AgentLeaderboard data={details?.agent_leaderboard ?? []} />
+          </div>
+          <ModelDistributionChart data={details?.model_distribution ?? []} />
+        </div>
+      </div>
+
+      {/* Row 6: Recent Activity */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Activity size={14} className="text-zinc-500" />
+          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Recent Activity</h2>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <RecentSessionsList data={details?.recent_sessions ?? []} />
+          <ActiveTasksList data={details?.active_tasks ?? []} />
+        </div>
+      </div>
+
+      {/* Row 7: Team & Project Stats */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Users size={14} className="text-zinc-500" />
+          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Teams & Projects</h2>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <TeamActivityChart
+            teams={details?.team_activities ?? []}
+            strategyDist={details?.strategy_dist ?? []}
+          />
+          <ProjectActivityChart data={details?.project_activities ?? []} />
+        </div>
+      </div>
+
+      {/* Row 8: Quick Start (collapsed) */}
+      <details className="bg-[#111114] border border-white/[0.06] rounded-xl shadow-card group">
+        <summary className="px-6 py-4 cursor-pointer text-sm font-display font-semibold text-zinc-400 hover:text-zinc-200 flex items-center gap-2">
+          <ChevronRight size={14} className="group-open:rotate-90" />
+          Quick Start Guide
+        </summary>
+        <div className="px-6 pb-4 space-y-2">
           {steps.map((step, index) => (
             <button
               key={step.path}
               onClick={() => navigate(step.path)}
-              className="group w-full text-left px-4 py-3 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-transparent hover:border-white/[0.06] text-sm text-zinc-300 transition-all duration-200 flex items-center gap-3"
+              className="group/step w-full text-left px-4 py-3 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-transparent hover:border-white/[0.06] text-sm text-zinc-300 flex items-center gap-3"
             >
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-medium text-zinc-500 group-hover:text-zinc-300 transition-colors">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-medium text-zinc-500 group-hover/step:text-zinc-300">
                 {index + 1}
               </span>
               <span className="flex-1">{step.label}</span>
-              <ChevronRight size={14} className="text-zinc-600 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
+              <ChevronRight size={14} className="text-zinc-600 opacity-0 group-hover/step:opacity-100" />
             </button>
           ))}
         </div>
-      </div>
+      </details>
     </div>
   )
 }

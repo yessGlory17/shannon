@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Users, Trash2, GitBranch } from 'lucide-react'
 import { useTeamStore } from '../stores/teamStore'
 import { useAgentStore } from '../stores/agentStore'
+import { Pagination } from '../components/common/Pagination'
 
 const strategyLabels: Record<string, { label: string; color: string }> = {
   parallel: { label: 'Parallel', color: 'text-blue-400 bg-blue-500/10' },
@@ -12,13 +13,17 @@ const strategyLabels: Record<string, { label: string; color: string }> = {
 
 export function TeamList() {
   const navigate = useNavigate()
-  const { teams, loading, fetch, remove } = useTeamStore()
+  const { teams, loading, pagination, fetchPaginated, remove } = useTeamStore()
   const { agents, fetch: fetchAgents } = useAgentStore()
 
+  const goToPage = useCallback((p: number) => {
+    fetchPaginated(p, pagination.pageSize)
+  }, [fetchPaginated, pagination.pageSize])
+
   useEffect(() => {
-    fetch()
+    fetchPaginated(1)
     fetchAgents()
-  }, [fetch, fetchAgents])
+  }, [fetchPaginated, fetchAgents])
 
   const getAgentNames = (ids: string[]) => {
     if (!ids || ids.length === 0) return 'No agents'
@@ -47,7 +52,7 @@ export function TeamList() {
         </div>
         <button
           onClick={() => navigate('/teams/new')}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm hover:shadow-brand"
+          className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm hover:shadow-brand"
         >
           <Plus size={14} />
           New Team
@@ -59,7 +64,7 @@ export function TeamList() {
           <div className="flex items-center justify-center py-16 text-sm text-zinc-500">
             Loading...
           </div>
-        ) : teams.length === 0 ? (
+        ) : teams.length === 0 && pagination.totalItems === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-12 h-12 rounded-full bg-white/[0.06] flex items-center justify-center mb-4">
               <Users size={20} className="text-zinc-600" />
@@ -77,6 +82,7 @@ export function TeamList() {
             </button>
           </div>
         ) : (
+          <>
           <div className="space-y-2">
             {teams.map((team) => {
               const strategy = strategyLabels[team.strategy] || strategyLabels.parallel
@@ -87,7 +93,7 @@ export function TeamList() {
                 <button
                   key={team.id}
                   onClick={() => navigate(`/teams/${team.id}/edit`)}
-                  className="w-full rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card hover:shadow-card-hover transition-all duration-200 text-left p-4"
+                  className="card-item w-full rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card hover:shadow-card-hover transition-[color,background-color,border-color,box-shadow,opacity] duration-200 text-left p-4"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -125,6 +131,8 @@ export function TeamList() {
               )
             })}
           </div>
+          <Pagination page={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.totalItems} onPageChange={goToPage} />
+          </>
         )}
       </div>
     </div>

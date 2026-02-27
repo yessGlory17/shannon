@@ -1,3 +1,9 @@
 build/bin
 node_modules
 frontend/dist
+
+# Sensitive files
+.vault
+.env
+*.env
+.env.*

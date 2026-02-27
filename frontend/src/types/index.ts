@@ -5,6 +5,7 @@ export interface Project {
   test_command?: string
   build_command?: string
   setup_commands?: string[]
+  claude_md?: string
   created_at: string
   updated_at: string
 }
@@ -16,8 +17,12 @@ export interface Agent {
   model: string
   system_prompt: string
   allowed_tools: string[]
+  disallowed_tools: string[]
   mcp_server_ids: string[]
   permissions: string
+  protected_paths: string[]
+  read_only_paths: string[]
+  max_retries: number
   created_at: string
   updated_at: string
 }
@@ -91,6 +96,14 @@ export interface MCPWizardData {
   enabled: boolean
 }
 
+export interface PaginatedResponse<T> {
+  items: T[]
+  total_count: number
+  page: number
+  page_size: number
+  total_pages: number
+}
+
 export interface MCPCatalogResponse {
   servers: MCPCatalogItem[]
   totalCount: number
@@ -130,6 +143,7 @@ export interface Task {
   session_id: string
   title: string
   prompt: string
+  original_prompt?: string
   status: TaskStatus
   agent_id?: string
   team_id?: string
@@ -137,6 +151,9 @@ export interface Task {
   workspace_path?: string
   claude_session_id?: string
   pending_input_data?: string
+  max_retries: number
+  retry_count: number
+  resume_count: number
   exit_code: number
   result_text?: string
   files_changed: string[]
@@ -235,6 +252,99 @@ export interface PlanResult {
 export interface PromptImproveResult {
   improved_prompt: string
   explanation: string
+}
+
+// ─── Dashboard Details (Rich) ─────────────────────────
+
+export interface StatusCount {
+  label: string
+  count: number
+}
+
+export interface DailyCount {
+  date: string
+  completed: number
+  failed: number
+}
+
+export interface AgentPerformance {
+  agent_id: string
+  agent_name: string
+  model: string
+  completed: number
+  failed: number
+  total: number
+  success_rate: number
+}
+
+export interface RecentSessionInfo {
+  id: string
+  name: string
+  project_id: string
+  status: string
+  total_tasks: number
+  done_tasks: number
+  created_at: string
+}
+
+export interface ActiveTaskInfo {
+  id: string
+  title: string
+  session_id: string
+  agent_id: string
+  agent_name: string
+  started_at: string
+}
+
+export interface CodeReviewStats {
+  pending_reviews: number
+  files_changed: number
+  accepted_tasks: number
+  rejected_tasks: number
+  accept_rate: number
+}
+
+export interface TeamActivityInfo {
+  team_id: string
+  team_name: string
+  strategy: string
+  task_count: number
+  agent_count: number
+}
+
+export interface ProjectActivityInfo {
+  project_id: string
+  project_name: string
+  session_count: number
+  task_count: number
+  test_pass_rate: number
+  build_pass_rate: number
+}
+
+export interface DashboardDetails {
+  project_count: number
+  agent_count: number
+  team_count: number
+  session_count: number
+  running_tasks: number
+
+  task_status_dist: StatusCount[]
+  session_status_dist: StatusCount[]
+  task_success_rate: number
+  task_completion_trend: DailyCount[]
+
+  agent_leaderboard: AgentPerformance[]
+  model_distribution: StatusCount[]
+
+  recent_sessions: RecentSessionInfo[]
+  active_tasks: ActiveTaskInfo[]
+
+  code_review: CodeReviewStats
+
+  team_activities: TeamActivityInfo[]
+  strategy_dist: StatusCount[]
+
+  project_activities: ProjectActivityInfo[]
 }
 
 // Chat

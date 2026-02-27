@@ -135,7 +135,7 @@ export function MCPInstallWizard({ onClose, onComplete, prefillFromCatalog }: MC
               <button
                 onClick={handleComplete}
                 disabled={!data.name.trim() || !data.command.trim() || saving}
-                className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm disabled:opacity-50"
+                className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-colors shadow-brand-sm disabled:opacity-50"
               >
                 {saving ? 'Installing...' : 'Install & Activate'}
               </button>
@@ -146,7 +146,7 @@ export function MCPInstallWizard({ onClose, onComplete, prefillFromCatalog }: MC
                   // we might need special handling
                   stepper.goNext()
                 }}
-                className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
+                className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-colors shadow-brand-sm"
               >
                 Next
               </button>

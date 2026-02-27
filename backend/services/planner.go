@@ -24,10 +24,51 @@ type PlanResult struct {
 }
 
 // Planner uses Claude to decompose a high-level goal into concrete tasks.
-type Planner struct{}
+type Planner struct {
+	envVars map[string]string
+}
 
-func NewPlanner() *Planner {
-	return &Planner{}
+func NewPlanner(envVars map[string]string) *Planner {
+	return &Planner{envVars: envVars}
+}
+
+// planResultJSONSchema returns the JSON schema for PlanResult to use with --json-schema flag.
+func planResultJSONSchema() string {
+	return `{
+  "type": "object",
+  "required": ["summary", "tasks"],
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "Brief description of the overall plan"
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["title", "prompt"],
+        "properties": {
+          "title": { "type": "string", "description": "Short task title" },
+          "prompt": { "type": "string", "description": "Detailed prompt for the agent" },
+          "dependencies": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Titles of tasks this task depends on"
+          },
+          "agent_id": { "type": "string", "description": "ID of the assigned agent" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}`
+}
+
+// SetEnvVars updates the environment variables injected into Claude subprocesses.
+func (p *Planner) SetEnvVars(envVars map[string]string) {
+	p.envVars = envVars
 }
 
 // buildAgentsList formats agents into a readable list for the planner prompt.
@@ -48,10 +89,8 @@ func (p *Planner) PlanTasks(ctx context.Context, projectPath string, goal string
 	agentInfo := buildAgentsList(agents)
 
 	agentRule := ""
-	jsonExample := `{"summary": "brief description of the plan", "tasks": [{"title": "short title", "prompt": "detailed prompt for the agent", "dependencies": ["title of dependent task"]}]}`
 	if len(agents) > 0 {
 		agentRule = `- For each task, set "agent_id" to the ID of the most suitable agent based on the agent's name and description. Match the task's purpose to the agent's specialization.` + "\n"
-		jsonExample = `{"summary": "brief description of the plan", "tasks": [{"title": "short title", "prompt": "detailed prompt for the agent", "agent_id": "id-of-best-matching-agent", "dependencies": ["title of dependent task"]}]}`
 	}
 
 	prompt := fmt.Sprintf(`You are a task planner for a software development workflow.
@@ -66,39 +105,43 @@ Rules:
 - If a task depends on another, specify the dependency by title
 - Each task prompt should be detailed enough for an AI agent to execute without additional context
 - Keep task count between 2-8 tasks
-%s
-Respond ONLY with a JSON object in this exact format (no markdown, no explanation):
-%s`, goal, agentInfo, agentRule, jsonExample)
+%s`, goal, agentInfo, agentRule)
 
 	proc, err := claude.StartProcess(ctx, claude.ProcessOptions{
 		WorkDir:     projectPath,
 		Model:       "sonnet",
 		Prompt:      prompt,
 		Permissions: "default",
+		JSONSchema:  planResultJSONSchema(),
+		Env:         p.envVars,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("start planner: %w", err)
 	}
 
-	// Collect all output
-	var resultText strings.Builder
+	// Collect all output. With --json-schema, the result event contains validated JSON.
+	var resultJSON string
+	var assistantText strings.Builder
 	for event := range proc.Events() {
 		switch event.Type {
 		case "result":
-			resultText.WriteString(event.Result)
+			resultJSON = event.Result
 		case "assistant":
 			text := claude.ExtractTextContent(event)
 			if text != "" {
-				resultText.WriteString(text)
+				assistantText.WriteString(text)
 			}
 		}
 	}
 
 	<-proc.Done()
 
-	// Parse the JSON response
-	raw := resultText.String()
-	raw = extractJSON(raw)
+	// Primary path: parse the result event (validated by --json-schema)
+	raw := resultJSON
+	if raw == "" {
+		// Fallback: try assistant text with brace-depth extraction
+		raw = extractJSON(assistantText.String())
+	}
 
 	var result PlanResult
 	if err := json.Unmarshal([]byte(raw), &result); err != nil {

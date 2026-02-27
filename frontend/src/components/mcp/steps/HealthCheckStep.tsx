@@ -69,7 +69,7 @@ export function HealthCheckStep({ data, onChange }: HealthCheckStepProps) {
         <div className="flex flex-col items-center py-6">
           <button
             onClick={runTest}
-            className="flex items-center gap-2 px-6 py-3 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-xl transition-all shadow-brand-sm"
+            className="flex items-center gap-2 px-6 py-3 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-xl transition-colors shadow-brand-sm"
           >
             <Play size={16} />
             Run Test
@@ -159,7 +159,7 @@ export function HealthCheckStep({ data, onChange }: HealthCheckStepProps) {
             <button
               onClick={runTest}
               disabled={running}
-              className="flex items-center gap-1.5 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-colors shadow-brand-sm disabled:opacity-50"
             >
               {running ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
               Try Again

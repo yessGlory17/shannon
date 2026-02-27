@@ -1,11 +1,12 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Play, Square, Check, X, Clock, Loader2, ArrowLeft,
   ChevronRight, FileCode, Terminal, TestTube, CheckCircle, XCircle, AlertTriangle,
   MessageCircleQuestion,
 } from 'lucide-react'
-import { useSessionStore } from '../stores/sessionStore'
+import { useSessionStore, useTaskLogs, useTaskDiff } from '../stores/sessionStore'
 import { useAgentStore } from '../stores/agentStore'
 import { useProjectStore } from '../stores/projectStore'
 import { useWailsEvent } from '../hooks/useWailsEvent'
@@ -24,16 +25,31 @@ const statusIcon: Record<TaskStatus, JSX.Element> = {
 export function SessionMonitor() {
   const { id: sessionID } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const {
-    currentSession, tasks, logs, diffs,
-    fetchTasks, setCurrentSession, startSession, stopSession, refreshTask,
-    appendLog, setDiff, loadSessionEvents,
-  } = useSessionStore()
-  const { agents, fetch: fetchAgents } = useAgentStore()
-  const { projects, fetch: fetchProjects } = useProjectStore()
+
+  // Granular selectors - each selector subscribes only to its slice
+  const currentSession = useSessionStore((s) => s.currentSession)
+  const tasks = useSessionStore((s) => s.tasks)
+  const fetchTasks = useSessionStore((s) => s.fetchTasks)
+  const setCurrentSession = useSessionStore((s) => s.setCurrentSession)
+  const startSession = useSessionStore((s) => s.startSession)
+  const stopSession = useSessionStore((s) => s.stopSession)
+  const refreshTask = useSessionStore((s) => s.refreshTask)
+  const appendLog = useSessionStore((s) => s.appendLog)
+  const setDiff = useSessionStore((s) => s.setDiff)
+  const loadSessionEvents = useSessionStore((s) => s.loadSessionEvents)
+
+  const agents = useAgentStore((s) => s.agents)
+  const fetchAgents = useAgentStore((s) => s.fetch)
+  const fetchProjects = useProjectStore((s) => s.fetch)
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const logEndRef = useRef<HTMLDivElement>(null)
+
+  const isRunning = currentSession?.status === 'running'
+
+  // Task-specific selectors — only re-render when selected task's data changes
+  const selectedLogs = useTaskLogs(selectedTaskId ?? undefined)
+  const selectedDiff = useTaskDiff(selectedTaskId ?? undefined)
 
   // Load initial data + buffered events from backend
   useEffect(() => {
@@ -46,15 +62,15 @@ export function SessionMonitor() {
     }
   }, [sessionID, fetchTasks, fetchAgents, fetchProjects, setCurrentSession, loadSessionEvents])
 
-  // Polling fallback: refresh tasks and session every 2s while running
+  // Polling fallback - Wails events handle real-time updates; this is a safety net only
   useEffect(() => {
-    if (!sessionID) return
+    if (!sessionID || !isRunning) return
     const interval = setInterval(() => {
       fetchTasks(sessionID)
       window.go.main.App.GetSession(sessionID).then(setCurrentSession).catch(console.error)
-    }, 2000)
+    }, 15000)
     return () => clearInterval(interval)
-  }, [sessionID, fetchTasks, setCurrentSession])
+  }, [sessionID, isRunning, fetchTasks, setCurrentSession])
 
   // Listen for task stream events → store in zustand
   useWailsEvent<TaskStreamEvent>('task:stream', (event) => {
@@ -85,22 +101,19 @@ export function SessionMonitor() {
     }
   })
 
-  const selectedTask = tasks.find((t) => t.id === selectedTaskId)
-  const selectedLogs = selectedTaskId ? (logs[selectedTaskId] || []) : []
-  const selectedDiff = selectedTaskId ? diffs[selectedTaskId] : null
+  const selectedTask = useMemo(() => tasks.find((t) => t.id === selectedTaskId), [tasks, selectedTaskId])
 
   // Auto-scroll logs
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    logEndRef.current?.scrollIntoView({ behavior: 'instant' })
   }, [selectedLogs.length, selectedTaskId])
 
-  const completedCount = tasks.filter((t) => t.status === 'completed').length
-  const isRunning = currentSession?.status === 'running'
+  const completedCount = useMemo(() => tasks.filter((t) => t.status === 'completed').length, [tasks])
 
-  const getAgentName = (id?: string) => {
+  const getAgentName = useCallback((id?: string) => {
     if (!id) return '-'
     return agents.find((a) => a.id === id)?.name || id.slice(0, 8)
-  }
+  }, [agents])
 
   const handleApply = async (taskId: string) => {
     try {
@@ -144,7 +157,7 @@ export function SessionMonitor() {
           {!isRunning ? (
             <button
               onClick={() => sessionID && startSession(sessionID)}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-opacity shadow-brand-sm"
             >
               <Play size={14} />
               Start
@@ -209,24 +222,7 @@ export function SessionMonitor() {
                     <Loader2 size={12} className="text-brand-blue animate-spin ml-auto" />
                   )}
                 </div>
-                <div className="flex-1 overflow-auto p-3 font-mono text-xs space-y-0.5">
-                  {selectedLogs.length === 0 ? (
-                    <p className="text-zinc-600">Waiting for output...</p>
-                  ) : (
-                    selectedLogs.map((log, i) => (
-                      <div key={i} className={`${
-                        log.type === 'tool_use' ? 'text-amber-400' :
-                        log.type === 'error' ? 'text-red-400' :
-                        log.type === 'result' ? 'text-emerald-400' :
-                        'text-zinc-300'
-                      }`}>
-                        {log.type === 'tool_use' && <span className="text-zinc-600">&gt; </span>}
-                        {log.content}
-                      </div>
-                    ))
-                  )}
-                  <div ref={logEndRef} />
-                </div>
+                <VirtualizedLogs logs={selectedLogs} logEndRef={logEndRef} />
               </div>
 
               {/* Error message for failed tasks */}
@@ -298,7 +294,7 @@ export function SessionMonitor() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleApply(selectedTask.id)}
-                    className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-opacity shadow-brand-sm"
                   >
                     <Check size={14} />
                     Apply Changes
@@ -316,6 +312,65 @@ export function SessionMonitor() {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+// Virtualized log viewer — renders only visible rows for 1000+ log entries
+function VirtualizedLogs({ logs, logEndRef }: { logs: TaskStreamEvent[]; logEndRef: React.RefObject<HTMLDivElement> }) {
+  const parentRef = useRef<HTMLDivElement>(null)
+
+  const virtualizer = useVirtualizer({
+    count: logs.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 22,
+    overscan: 20,
+  })
+
+  // Auto-scroll to bottom when new logs arrive
+  useEffect(() => {
+    if (logs.length > 0) {
+      virtualizer.scrollToIndex(logs.length - 1, { align: 'end' })
+    }
+  }, [logs.length, virtualizer])
+
+  if (logs.length === 0) {
+    return (
+      <div className="flex-1 overflow-auto p-3 font-mono text-xs">
+        <p className="text-zinc-600">Waiting for output...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div ref={parentRef} className="flex-1 overflow-auto p-3 font-mono text-xs">
+      <div style={{ height: virtualizer.getTotalSize(), width: '100%', position: 'relative' }}>
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const log = logs[virtualRow.index]
+          return (
+            <div
+              key={virtualRow.index}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+              className={
+                log.type === 'tool_use' ? 'text-amber-400' :
+                log.type === 'error' ? 'text-red-400' :
+                log.type === 'result' ? 'text-emerald-400' :
+                'text-zinc-300'
+              }
+            >
+              {log.type === 'tool_use' && <span className="text-zinc-600">&gt; </span>}
+              {log.content}
+            </div>
+          )
+        })}
+      </div>
+      <div ref={logEndRef} />
     </div>
   )
 }

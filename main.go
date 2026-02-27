@@ -2,6 +2,8 @@ package main
 
 import (
 	"embed"
+	"os"
+	"runtime"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -12,6 +14,11 @@ import (
 var assets embed.FS
 
 func main() {
+	// Wails v2 frameless mode requires X11; force XWayland on Linux
+	if runtime.GOOS == "linux" {
+		os.Setenv("GDK_BACKEND", "x11")
+	}
+
 	app := NewApp()
 
 	err := wails.Run(&options.App{

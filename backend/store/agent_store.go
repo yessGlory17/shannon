@@ -46,6 +46,25 @@ func (s *AgentStore) List() ([]models.Agent, error) {
 	return agents, nil
 }
 
+func (s *AgentStore) ListPaginated(page, pageSize int) (*models.PaginatedResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	var total int64
+	if err := s.db.Model(&models.Agent{}).Count(&total).Error; err != nil {
+		return nil, err
+	}
+	var agents []models.Agent
+	offset := (page - 1) * pageSize
+	if err := s.db.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&agents).Error; err != nil {
+		return nil, err
+	}
+	return models.NewPaginatedResponse(agents, total, page, pageSize), nil
+}
+
 func (s *AgentStore) Update(a *models.Agent) error {
 	a.UpdatedAt = time.Now()
 	return s.db.Save(a).Error

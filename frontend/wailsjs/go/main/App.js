@@ -86,8 +86,16 @@ export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
 }
 
+export function GetDashboardDetails() {
+  return window['go']['main']['App']['GetDashboardDetails']();
+}
+
 export function GetDashboardStats() {
   return window['go']['main']['App']['GetDashboardStats']();
+}
+
+export function GetEnvVars() {
+  return window['go']['main']['App']['GetEnvVars']();
 }
 
 export function GetMCPInstallConfig(arg1) {
@@ -96,6 +104,10 @@ export function GetMCPInstallConfig(arg1) {
 
 export function GetMCPServer(arg1) {
   return window['go']['main']['App']['GetMCPServer'](arg1);
+}
+
+export function GetProjectClaudeMD(arg1) {
+  return window['go']['main']['App']['GetProjectClaudeMD'](arg1);
 }
 
 export function GetSession(arg1) {
@@ -118,6 +130,14 @@ export function GetTaskDiff(arg1) {
   return window['go']['main']['App']['GetTaskDiff'](arg1);
 }
 
+export function GetTaskEventCount(arg1) {
+  return window['go']['main']['App']['GetTaskEventCount'](arg1);
+}
+
+export function GetTaskEventRange(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GetTaskEventRange'](arg1, arg2, arg3);
+}
+
 export function GetTaskStreamEvents(arg1) {
   return window['go']['main']['App']['GetTaskStreamEvents'](arg1);
 }
@@ -138,6 +158,10 @@ export function ListAgents() {
   return window['go']['main']['App']['ListAgents']();
 }
 
+export function ListAgentsPaginated(arg1, arg2) {
+  return window['go']['main']['App']['ListAgentsPaginated'](arg1, arg2);
+}
+
 export function ListMCPServers() {
   return window['go']['main']['App']['ListMCPServers']();
 }
@@ -150,6 +174,10 @@ export function ListProjects() {
   return window['go']['main']['App']['ListProjects']();
 }
 
+export function ListProjectsPaginated(arg1, arg2) {
+  return window['go']['main']['App']['ListProjectsPaginated'](arg1, arg2);
+}
+
 export function ListSessions() {
   return window['go']['main']['App']['ListSessions']();
 }
@@ -158,12 +186,20 @@ export function ListSessionsByProject(arg1) {
   return window['go']['main']['App']['ListSessionsByProject'](arg1);
 }
 
+export function ListSessionsPaginated(arg1, arg2) {
+  return window['go']['main']['App']['ListSessionsPaginated'](arg1, arg2);
+}
+
 export function ListTasks(arg1) {
   return window['go']['main']['App']['ListTasks'](arg1);
 }
 
 export function ListTeams() {
   return window['go']['main']['App']['ListTeams']();
+}
+
+export function ListTeamsPaginated(arg1, arg2) {
+  return window['go']['main']['App']['ListTeamsPaginated'](arg1, arg2);
 }
 
 export function ParseMCPJson(arg1) {
@@ -188,6 +224,14 @@ export function RejectHunk(arg1, arg2, arg3, arg4) {
 
 export function RejectTaskChanges(arg1) {
   return window['go']['main']['App']['RejectTaskChanges'](arg1);
+}
+
+export function ResumeTask(arg1, arg2) {
+  return window['go']['main']['App']['ResumeTask'](arg1, arg2);
+}
+
+export function RetryTask(arg1) {
+  return window['go']['main']['App']['RetryTask'](arg1);
 }
 
 export function SaveWorkspaceFile(arg1, arg2, arg3) {
@@ -238,12 +282,20 @@ export function UpdateConfig(arg1) {
   return window['go']['main']['App']['UpdateConfig'](arg1);
 }
 
+export function UpdateEnvVars(arg1) {
+  return window['go']['main']['App']['UpdateEnvVars'](arg1);
+}
+
 export function UpdateMCPServer(arg1) {
   return window['go']['main']['App']['UpdateMCPServer'](arg1);
 }
 
 export function UpdateProject(arg1) {
   return window['go']['main']['App']['UpdateProject'](arg1);
+}
+
+export function UpdateProjectClaudeMD(arg1, arg2) {
+  return window['go']['main']['App']['UpdateProjectClaudeMD'](arg1, arg2);
 }
 
 export function UpdateTask(arg1) {

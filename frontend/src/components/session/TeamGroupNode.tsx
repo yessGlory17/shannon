@@ -61,7 +61,7 @@ function TeamGroupNodeComponent({ data }: { data: TeamGroupNodeData }) {
     <>
       <Handle type="target" position={Position.Left} className="!bg-zinc-600 !border-zinc-500 !w-2 !h-2" />
       <div
-        className={`rounded-xl border bg-[#111114]/90 overflow-hidden transition-all duration-200 ${border} ${
+        className={`rounded-xl border bg-[#111114]/90 overflow-hidden transition-colors duration-200 ${border} ${
           data.selected ? `ring-2 ${ring}` : ''
         }`}
         style={{ width: '100%', height: '100%' }}

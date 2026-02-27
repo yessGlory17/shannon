@@ -331,7 +331,7 @@ export function TeamEditor() {
           <button
             onClick={handleSave}
             disabled={!name.trim() || saving}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-brand-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-brand-sm"
           >
             <Save size={14} />
             {saving ? 'Saving...' : 'Save'}

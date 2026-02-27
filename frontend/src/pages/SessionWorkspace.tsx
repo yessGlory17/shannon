@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Play, Square, Loader2, MessageSquare, GitCompare, CheckCircle } from 'lucide-react'
 import { useSessionStore } from '../stores/sessionStore'
@@ -14,17 +14,31 @@ import type { TaskStreamEvent, DiffResult } from '../types'
 export function SessionWorkspace() {
   const { id: sessionID } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const {
-    currentSession, tasks, logs, diffs,
-    fetchTasks, setCurrentSession, startSession, stopSession, completeSession, refreshTask,
-    appendLog, setDiff, loadSessionEvents,
-  } = useSessionStore()
-  const { agents, fetch: fetchAgents } = useAgentStore()
-  const { teams, fetch: fetchTeams } = useTeamStore()
-  const { projects, fetch: fetchProjects } = useProjectStore()
+
+  // Granular selectors - each selector subscribes only to its slice
+  const currentSession = useSessionStore((s) => s.currentSession)
+  const tasks = useSessionStore((s) => s.tasks)
+  const diffs = useSessionStore((s) => s.diffs)
+  const fetchTasks = useSessionStore((s) => s.fetchTasks)
+  const setCurrentSession = useSessionStore((s) => s.setCurrentSession)
+  const startSession = useSessionStore((s) => s.startSession)
+  const stopSession = useSessionStore((s) => s.stopSession)
+  const completeSession = useSessionStore((s) => s.completeSession)
+  const refreshTask = useSessionStore((s) => s.refreshTask)
+  const appendLog = useSessionStore((s) => s.appendLog)
+  const setDiff = useSessionStore((s) => s.setDiff)
+  const loadSessionEvents = useSessionStore((s) => s.loadSessionEvents)
+
+  const agents = useAgentStore((s) => s.agents)
+  const fetchAgents = useAgentStore((s) => s.fetch)
+  const teams = useTeamStore((s) => s.teams)
+  const fetchTeams = useTeamStore((s) => s.fetch)
+  const fetchProjects = useProjectStore((s) => s.fetch)
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'chat' | 'changes'>('chat')
+
+  const isRunning = currentSession?.status === 'running'
 
   // Load initial data
   useEffect(() => {
@@ -38,15 +52,15 @@ export function SessionWorkspace() {
     }
   }, [sessionID, fetchTasks, fetchAgents, fetchTeams, fetchProjects, setCurrentSession, loadSessionEvents])
 
-  // Polling fallback
+  // Polling fallback - Wails events handle real-time updates; this is a safety net only
   useEffect(() => {
-    if (!sessionID) return
+    if (!sessionID || !isRunning) return
     const interval = setInterval(() => {
       fetchTasks(sessionID)
       try { window.go.main.App.GetSession(sessionID).then(setCurrentSession).catch(console.error) } catch {}
-    }, 2000)
+    }, 15000)
     return () => clearInterval(interval)
-  }, [sessionID, fetchTasks, setCurrentSession])
+  }, [sessionID, isRunning, fetchTasks, setCurrentSession])
 
   // Task stream events
   useWailsEvent<TaskStreamEvent>('task:stream', (event) => {
@@ -69,19 +83,19 @@ export function SessionWorkspace() {
     }
   })
 
-  // Session status events
+  // Session status events — only refresh session metadata, not tasks
+  // (individual task:status events handle task updates to avoid overwriting fresh data)
   useWailsEvent<{ session_id: string; status: string }>('session:status', () => {
     if (sessionID) {
-      fetchTasks(sessionID)
       try { window.go.main.App.GetSession(sessionID).then(setCurrentSession).catch(console.error) } catch {}
     }
   })
 
-  const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null
-  const completedCount = tasks.filter((t) => t.status === 'completed').length
-  const failedCount = tasks.filter((t) => t.status === 'failed').length
-  const isRunning = currentSession?.status === 'running'
-  const hasActiveTasks = tasks.some((t) => t.status === 'running' || t.status === 'queued' || t.status === 'pending')
+  // Memoize derived values
+  const selectedTask = useMemo(() => tasks.find((t) => t.id === selectedTaskId) || null, [tasks, selectedTaskId])
+  const completedCount = useMemo(() => tasks.filter((t) => t.status === 'completed').length, [tasks])
+  const failedCount = useMemo(() => tasks.filter((t) => t.status === 'failed').length, [tasks])
+  const hasActiveTasks = useMemo(() => tasks.some((t) => t.status === 'running' || t.status === 'queued' || t.status === 'pending'), [tasks])
   const allTasksDone = tasks.length > 0 && !hasActiveTasks
 
   return (
@@ -124,7 +138,7 @@ export function SessionWorkspace() {
           {!isRunning ? (
             <button
               onClick={() => sessionID && startSession(sessionID)}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-opacity shadow-brand-sm"
             >
               <Play size={14} />
               Start

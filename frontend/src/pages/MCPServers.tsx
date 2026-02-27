@@ -322,7 +322,7 @@ export function MCPServers() {
           <button
             onClick={handleSave}
             disabled={!hasChanges || !!parseError || syncStatus === 'saving'}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-gradient hover:opacity-90 text-white text-xs font-medium rounded-lg transition-all shadow-brand-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-gradient hover:opacity-90 text-white text-xs font-medium rounded-lg transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm disabled:opacity-40 disabled:cursor-not-allowed"
             title="Save & activate (Ctrl+S)"
           >
             <Save size={13} />

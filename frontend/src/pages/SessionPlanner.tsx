@@ -28,6 +28,7 @@ export function SessionPlanner() {
   const [agentId, setAgentId] = useState('')
   const [teamId, setTeamId] = useState('')
   const [deps, setDeps] = useState<string[]>([])
+  const [maxRetries, setMaxRetries] = useState(0)
 
   // Planner state
   const [showPlanner, setShowPlanner] = useState(false)
@@ -56,6 +57,7 @@ export function SessionPlanner() {
     setAgentId('')
     setTeamId('')
     setDeps([])
+    setMaxRetries(0)
     setEditingTask(null)
     setShowForm(false)
   }
@@ -86,6 +88,7 @@ export function SessionPlanner() {
           agent_id: agentId || undefined,
           team_id: teamId || undefined,
           dependencies: deps,
+          max_retries: maxRetries,
         })
       } else {
         await createTask({
@@ -96,6 +99,7 @@ export function SessionPlanner() {
           agent_id: agentId || undefined,
           team_id: teamId || undefined,
           dependencies: deps,
+          max_retries: maxRetries,
         })
       }
       resetForm()
@@ -110,6 +114,7 @@ export function SessionPlanner() {
     setAgentId(task.agent_id || '')
     setTeamId(task.team_id || '')
     setDeps(task.dependencies || [])
+    setMaxRetries(task.max_retries || 0)
     setEditingTask(task)
     setShowForm(true)
   }
@@ -247,7 +252,7 @@ export function SessionPlanner() {
           {isExecuting ? (
             <button
               onClick={() => navigate(`/workspace/${sessionID}`)}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm"
             >
               <Play size={14} />
               Open Workspace
@@ -256,7 +261,7 @@ export function SessionPlanner() {
             tasks.length > 0 && (
               <button
                 onClick={handleStartWorking}
-                className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm"
               >
                 <Play size={14} />
                 Start Working
@@ -328,7 +333,7 @@ export function SessionPlanner() {
               <div className="flex gap-2">
                 <button
                   onClick={handleAcceptPlan}
-                  className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm"
+                  className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm"
                 >
                   Accept & Create Tasks
                 </button>
@@ -376,7 +381,7 @@ export function SessionPlanner() {
                 className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 input-focus resize-none transition-colors"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs text-zinc-500 font-medium mb-1.5">Assign To</label>
                 <select
@@ -404,6 +409,18 @@ export function SessionPlanner() {
                 </select>
               </div>
               <div>
+                <label className="block text-xs text-zinc-500 font-medium mb-1.5">Max Retries</label>
+                <select
+                  value={maxRetries}
+                  onChange={(e) => setMaxRetries(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 input-focus transition-colors"
+                >
+                  {[0, 1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>{n === 0 ? 'No retry' : `${n} ${n === 1 ? 'retry' : 'retries'}`}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="block text-xs text-zinc-500 font-medium mb-1.5">Dependencies</label>
                 <div className="space-y-1 max-h-24 overflow-auto">
                   {tasks.filter((t) => t.id !== editingTask?.id).map((t) => (
@@ -427,7 +444,7 @@ export function SessionPlanner() {
               <button
                 onClick={handleCreateTask}
                 disabled={!title.trim() || !prompt.trim()}
-                className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-brand-sm"
+                className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm"
               >
                 {editingTask ? 'Update' : 'Add Task'}
               </button>
@@ -481,7 +498,7 @@ export function SessionPlanner() {
               return (
                 <div
                   key={task.id}
-                  className="rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card transition-all duration-200"
+                  className="rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card transition-[color,background-color,border-color,box-shadow,opacity] duration-200"
                 >
                   <div className="flex items-center gap-3 px-4 py-3">
                     <GripVertical size={14} className="text-zinc-700 flex-shrink-0" />
@@ -493,6 +510,11 @@ export function SessionPlanner() {
                           {getAssignmentIcon(task)}
                           {getAssignmentLabel(task)}
                         </span>
+                        {task.max_retries > 0 && (
+                          <span className="text-xs text-amber-500/70">
+                            retries: {task.max_retries}
+                          </span>
+                        )}
                         {depNames.length > 0 && (
                           <span className="text-xs text-zinc-600">
                             deps: {depNames.join(', ')}

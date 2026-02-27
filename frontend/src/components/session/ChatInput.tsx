@@ -27,6 +27,7 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
   const [showFilePicker, setShowFilePicker] = useState(false)
   const [fileList, setFileList] = useState<string[]>([])
   const [fileFilter, setFileFilter] = useState('')
+  const [pickerIndex, setPickerIndex] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const filePickerRef = useRef<HTMLDivElement>(null)
 
@@ -35,7 +36,7 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
     const ta = textareaRef.current
     if (ta) {
       ta.style.height = 'auto'
-      ta.style.height = Math.min(ta.scrollHeight, 150) + 'px'
+      ta.style.height = Math.min(ta.scrollHeight, 300) + 'px'
     }
   }, [message])
 
@@ -59,9 +60,46 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
   }, [message, mode, attachments, disabled, onSend])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // File picker keyboard navigation
+    if (showFilePicker) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setPickerIndex(prev => Math.min(prev + 1, filteredFiles.length - 1))
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setPickerIndex(prev => Math.max(prev - 1, 0))
+        return
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        if (filteredFiles[pickerIndex]) selectFile(filteredFiles[pickerIndex])
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setShowFilePicker(false)
+        return
+      }
+    }
+
+    // Ctrl/Cmd+Enter: send
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault()
+      handleSend()
+      return
+    }
+    // Enter: send (Shift+Enter: newline)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
+      return
+    }
+    // Escape: clear and blur
+    if (e.key === 'Escape') {
+      setMessage('')
+      textareaRef.current?.blur()
     }
   }
 
@@ -88,6 +126,7 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
         const files = await onListFiles()
         setFileList(files || [])
         setFileFilter('')
+        setPickerIndex(0)
         setShowFilePicker(true)
       } catch (e) {
         console.error('Failed to list files:', e)
@@ -168,17 +207,19 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
         <div ref={filePickerRef} className="mx-3 mt-2 bg-[#111114] border border-white/[0.08] rounded-xl max-h-48 overflow-hidden flex flex-col">
           <input
             value={fileFilter}
-            onChange={(e) => setFileFilter(e.target.value)}
+            onChange={(e) => { setFileFilter(e.target.value); setPickerIndex(0) }}
             placeholder="Search files..."
             className="px-3 py-1.5 bg-transparent border-b border-white/[0.06] text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none"
             autoFocus
           />
           <div className="overflow-auto">
-            {filteredFiles.map((file) => (
+            {filteredFiles.map((file, idx) => (
               <button
                 key={file}
                 onClick={() => selectFile(file)}
-                className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-white/[0.06] text-left transition-colors"
+                className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${
+                  idx === pickerIndex ? 'bg-white/[0.08]' : 'hover:bg-white/[0.06]'
+                }`}
               >
                 <FileText size={12} className="text-zinc-500 flex-shrink-0" />
                 <span className="text-xs text-zinc-300 truncate">{file}</span>
@@ -207,7 +248,7 @@ export function ChatInput({ onSend, disabled, disabledReason, taskId, onListFile
           <button
             onClick={handleSend}
             disabled={disabled || !message.trim()}
-            className="p-2 bg-brand-gradient hover:opacity-90 text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-brand-sm flex-shrink-0"
+            className="p-2 bg-brand-gradient hover:opacity-90 text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-brand-sm flex-shrink-0"
           >
             <Send size={16} />
           </button>

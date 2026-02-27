@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Save, Trash2, HardDrive, Loader2 } from 'lucide-react'
+import { Save, Trash2, HardDrive, Loader2, Plus, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import type { Config } from '../types'
 
 export function Settings() {
@@ -8,8 +8,28 @@ export function Settings() {
   const [saved, setSaved] = useState(false)
   const [cleaning, setCleaning] = useState(false)
 
+  // Env vars (stored in encrypted vault, separate from config)
+  const defaultEnvKeys: Record<string, string> = {
+    CLAUDE_CODE_USE_BEDROCK: '',
+    AWS_BEARER_TOKEN_BEDROCK: '',
+    AWS_REGION: '',
+    ANTHROPIC_MODEL: '',
+  }
+  const [envVars, setEnvVars] = useState<Record<string, string>>({})
+  const [newEnvKey, setNewEnvKey] = useState('')
+  const [newEnvValue, setNewEnvValue] = useState('')
+  const [showValues, setShowValues] = useState(false)
+  const [savingEnv, setSavingEnv] = useState(false)
+  const [savedEnv, setSavedEnv] = useState(false)
+
   useEffect(() => {
     window.go.main.App.GetConfig().then(setConfig).catch(console.error)
+    window.go.main.App.GetEnvVars().then((vars) => {
+      const loaded = vars || {}
+      // Merge default keys (only add missing ones, don't overwrite existing)
+      const merged = { ...defaultEnvKeys, ...loaded }
+      setEnvVars(merged)
+    }).catch(console.error)
   }, [])
 
   const handleSave = async () => {
@@ -25,6 +45,27 @@ export function Settings() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleSaveEnvVars = async () => {
+    setSavingEnv(true)
+    setSavedEnv(false)
+    try {
+      await window.go.main.App.UpdateEnvVars(envVars)
+      setSavedEnv(true)
+      setTimeout(() => setSavedEnv(false), 2000)
+    } catch (e) {
+      console.error('Failed to save env vars:', e)
+    } finally {
+      setSavingEnv(false)
+    }
+  }
+
+  const addEnvVar = () => {
+    if (!newEnvKey.trim()) return
+    setEnvVars({ ...envVars, [newEnvKey.trim()]: newEnvValue })
+    setNewEnvKey('')
+    setNewEnvValue('')
   }
 
   const handleCleanupWorkspaces = async () => {
@@ -67,6 +108,99 @@ export function Settings() {
                 Path to the Claude CLI binary. Default: "claude" (uses PATH)
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Environment Variables (Encrypted Vault) */}
+        <div className="rounded-xl bg-[#111114] border border-white/[0.06] shadow-card p-5">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={14} className="text-emerald-500" />
+              <h2 className="text-sm font-medium text-zinc-300">Environment Variables</h2>
+            </div>
+            <button
+              onClick={() => setShowValues(!showValues)}
+              className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              {showValues ? <EyeOff size={12} /> : <Eye size={12} />}
+              {showValues ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          <p className="text-xs text-zinc-600 mb-4">
+            Encrypted with AES-256-GCM. Passed to Claude CLI subprocesses at runtime.
+          </p>
+
+          <div className="space-y-2 mb-3">
+            {Object.entries(envVars).map(([key, value]) => (
+              <div key={key} className="flex items-center gap-2">
+                <input
+                  value={key}
+                  readOnly
+                  className="w-1/3 px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 font-mono"
+                />
+                <input
+                  value={value}
+                  onChange={(e) => {
+                    setEnvVars({ ...envVars, [key]: e.target.value })
+                  }}
+                  type={showValues ? 'text' : 'password'}
+                  className="flex-1 px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 font-mono input-focus transition-colors"
+                />
+                <button
+                  onClick={() => {
+                    const updated = { ...envVars }
+                    delete updated[key]
+                    setEnvVars(updated)
+                  }}
+                  className="p-2 text-zinc-500 hover:text-red-400 transition-colors"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 mb-4">
+            <input
+              placeholder="KEY"
+              value={newEnvKey}
+              onChange={(e) => setNewEnvKey(e.target.value.toUpperCase())}
+              onKeyDown={(e) => { if (e.key === 'Enter') addEnvVar() }}
+              className="w-1/3 px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 font-mono input-focus transition-colors"
+            />
+            <input
+              placeholder="value"
+              value={newEnvValue}
+              onChange={(e) => setNewEnvValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') addEnvVar() }}
+              type={showValues ? 'text' : 'password'}
+              className="flex-1 px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 font-mono input-focus transition-colors"
+            />
+            <button
+              onClick={addEnvVar}
+              disabled={!newEnvKey.trim()}
+              className="p-2 text-zinc-500 hover:text-emerald-400 disabled:opacity-30 transition-colors"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 pt-3 border-t border-white/[0.06]">
+            <button
+              onClick={handleSaveEnvVars}
+              disabled={savingEnv}
+              className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-lg disabled:opacity-50 transition-colors border border-emerald-500/20"
+            >
+              {savingEnv ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <ShieldCheck size={12} />
+              )}
+              {savingEnv ? 'Encrypting...' : 'Save to Vault'}
+            </button>
+            {savedEnv && (
+              <span className="text-xs text-emerald-400">Encrypted & saved</span>
+            )}
           </div>
         </div>
 
@@ -166,7 +300,7 @@ export function Settings() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-all shadow-brand-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm"
           >
             {saving ? (
               <Loader2 size={14} className="animate-spin" />

@@ -43,6 +43,25 @@ func (s *TeamStore) List() ([]models.Team, error) {
 	return teams, nil
 }
 
+func (s *TeamStore) ListPaginated(page, pageSize int) (*models.PaginatedResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	var total int64
+	if err := s.db.Model(&models.Team{}).Count(&total).Error; err != nil {
+		return nil, err
+	}
+	var teams []models.Team
+	offset := (page - 1) * pageSize
+	if err := s.db.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&teams).Error; err != nil {
+		return nil, err
+	}
+	return models.NewPaginatedResponse(teams, total, page, pageSize), nil
+}
+
 func (s *TeamStore) Update(t *models.Team) error {
 	t.UpdatedAt = time.Now()
 	return s.db.Save(t).Error

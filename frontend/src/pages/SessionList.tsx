@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Play, Clock, Check, X, Loader2, Trash2, Pause } from 'lucide-react'
 import { useSessionStore } from '../stores/sessionStore'
 import { useProjectStore } from '../stores/projectStore'
+import { Pagination } from '../components/common/Pagination'
 import type { SessionStatus } from '../types'
 
 const statusConfig: Record<SessionStatus, { icon: JSX.Element; label: string; color: string }> = {
@@ -15,17 +16,21 @@ const statusConfig: Record<SessionStatus, { icon: JSX.Element; label: string; co
 
 export function SessionList() {
   const navigate = useNavigate()
-  const { sessions, loading, fetchSessions, createSession } = useSessionStore()
+  const { sessions, loading, pagination, fetchSessionsPaginated, createSession } = useSessionStore()
   const { projects, fetch: fetchProjects } = useProjectStore()
+
+  const goToPage = useCallback((p: number) => {
+    fetchSessionsPaginated(p, pagination.pageSize)
+  }, [fetchSessionsPaginated, pagination.pageSize])
 
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [projectId, setProjectId] = useState('')
 
   useEffect(() => {
-    fetchSessions()
+    fetchSessionsPaginated(1)
     fetchProjects()
-  }, [fetchSessions, fetchProjects])
+  }, [fetchSessionsPaginated, fetchProjects])
 
   const handleCreate = async () => {
     if (!name.trim() || !projectId) return
@@ -44,7 +49,7 @@ export function SessionList() {
     e.stopPropagation()
     try {
       await window.go.main.App.DeleteSession(id)
-      fetchSessions()
+      fetchSessionsPaginated(pagination.page, pagination.pageSize)
     } catch (err) {
       console.error('Failed to delete session:', err)
     }
@@ -63,7 +68,7 @@ export function SessionList() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm hover:shadow-brand"
+          className="flex items-center gap-2 px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm hover:shadow-brand"
         >
           <Plus size={16} />
           New Session
@@ -101,7 +106,7 @@ export function SessionList() {
               <button
                 onClick={handleCreate}
                 disabled={!name.trim() || !projectId}
-                className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-brand-sm"
+                className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm"
               >
                 Create & Open
               </button>
@@ -121,13 +126,14 @@ export function SessionList() {
         <div className="flex items-center justify-center py-12">
           <Loader2 size={20} className="text-brand-blue animate-spin" />
         </div>
-      ) : sessions.length === 0 ? (
+      ) : sessions.length === 0 && pagination.totalItems === 0 ? (
         <div className="text-center py-12">
           <Play size={32} className="mx-auto text-zinc-700 mb-3 opacity-30" />
           <p className="text-sm text-zinc-500">No sessions yet</p>
           <p className="text-xs text-zinc-600 mt-1">Create a session to start working on tasks</p>
         </div>
       ) : (
+        <>
         <div className="space-y-2">
           {sessions.map((sess) => {
             const cfg = statusConfig[sess.status]
@@ -135,7 +141,7 @@ export function SessionList() {
               <div
                 key={sess.id}
                 onClick={() => navigate(`/sessions/${sess.id}`)}
-                className="w-full flex items-center gap-4 px-5 py-4 rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card hover:shadow-card-hover text-left transition-all duration-200 group cursor-pointer"
+                className="card-item w-full flex items-center gap-4 px-5 py-4 rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card hover:shadow-card-hover text-left transition-[color,background-color,border-color,box-shadow,opacity] duration-200 group cursor-pointer"
               >
                 <div className={cfg.color}>{cfg.icon}</div>
                 <div className="flex-1 min-w-0">
@@ -149,7 +155,7 @@ export function SessionList() {
                 </span>
                 <button
                   onClick={(e) => handleDelete(sess.id, e)}
-                  className="p-1.5 rounded text-zinc-600 hover:text-red-400 hover:bg-white/[0.06] opacity-0 group-hover:opacity-100 transition-all"
+                  className="p-1.5 rounded text-zinc-600 hover:text-red-400 hover:bg-white/[0.06] opacity-0 group-hover:opacity-100 transition-[color,background-color,border-color,box-shadow,opacity]"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -157,6 +163,8 @@ export function SessionList() {
             )
           })}
         </div>
+        <Pagination page={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.totalItems} onPageChange={goToPage} />
+        </>
       )}
     </div>
   )

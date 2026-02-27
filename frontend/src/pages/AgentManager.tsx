@@ -1,16 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Trash2, Bot, Pencil, Sparkles, Server } from 'lucide-react'
 import { useAgentStore } from '../stores/agentStore'
+import { Pagination } from '../components/common/Pagination'
 
 export function AgentManager() {
   const navigate = useNavigate()
-  const { agents, loading, fetch, remove, seedExamples } = useAgentStore()
+  const { agents, loading, pagination, fetchPaginated, remove, seedExamples } = useAgentStore()
   const [seeding, setSeeding] = useState(false)
 
+  const goToPage = useCallback((p: number) => {
+    fetchPaginated(p, pagination.pageSize)
+  }, [fetchPaginated, pagination.pageSize])
+
   useEffect(() => {
-    fetch()
-  }, [fetch])
+    fetchPaginated(1)
+  }, [fetchPaginated])
 
   const handleSeedExamples = async () => {
     setSeeding(true)
@@ -39,7 +44,7 @@ export function AgentManager() {
           </button>
           <button
             onClick={() => navigate('/agents/new')}
-            className="flex items-center gap-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg px-4 py-2 transition-all shadow-brand-sm hover:shadow-brand"
+            className="flex items-center gap-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg px-4 py-2 transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm hover:shadow-brand"
           >
             <Plus size={16} />
             New Agent
@@ -49,7 +54,7 @@ export function AgentManager() {
 
       {loading ? (
         <p className="text-sm text-zinc-500">Loading...</p>
-      ) : agents.length === 0 ? (
+      ) : agents.length === 0 && pagination.totalItems === 0 ? (
         <div className="text-center py-16 text-zinc-600">
           <Bot size={48} className="mx-auto mb-4 opacity-20" />
           <p className="text-sm text-zinc-400 mb-1">No agents defined yet.</p>
@@ -65,7 +70,7 @@ export function AgentManager() {
             </button>
             <button
               onClick={() => navigate('/agents/new')}
-              className="flex items-center gap-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg px-4 py-2.5 transition-all shadow-brand-sm hover:shadow-brand"
+              className="flex items-center gap-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg px-4 py-2.5 transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm hover:shadow-brand"
             >
               <Plus size={16} />
               New Agent
@@ -73,11 +78,12 @@ export function AgentManager() {
           </div>
         </div>
       ) : (
+        <>
         <div className="space-y-2">
           {agents.map((agent) => (
             <div
               key={agent.id}
-              className="rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card transition-all duration-200 p-4"
+              className="card-item rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card transition-[color,background-color,border-color,box-shadow,opacity] duration-200 p-4"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -127,6 +133,8 @@ export function AgentManager() {
             </div>
           ))}
         </div>
+        <Pagination page={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.totalItems} onPageChange={goToPage} />
+        </>
       )}
     </div>
   )

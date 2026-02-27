@@ -50,6 +50,11 @@ func (s *TaskStore) Delete(id string) error {
 	return s.db.Delete(&models.Task{}, "id = ?", id).Error
 }
 
+// UpdateField updates a single field on a task by ID.
+func (s *TaskStore) UpdateField(id string, field string, value any) error {
+	return s.db.Model(&models.Task{}).Where("id = ?", id).Update(field, value).Error
+}
+
 func (s *TaskStore) UpdateStatus(id string, status models.TaskStatus) error {
 	updates := map[string]any{"status": status}
 	now := time.Now()

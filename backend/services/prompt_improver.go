@@ -15,10 +15,36 @@ type PromptImproveResult struct {
 }
 
 // PromptImprover uses Claude to enhance system prompts.
-type PromptImprover struct{}
+type PromptImprover struct {
+	envVars map[string]string
+}
 
-func NewPromptImprover() *PromptImprover {
-	return &PromptImprover{}
+func NewPromptImprover(envVars map[string]string) *PromptImprover {
+	return &PromptImprover{envVars: envVars}
+}
+
+// promptImproveJSONSchema returns the JSON schema for PromptImproveResult.
+func promptImproveJSONSchema() string {
+	return `{
+  "type": "object",
+  "required": ["improved_prompt", "explanation"],
+  "properties": {
+    "improved_prompt": {
+      "type": "string",
+      "description": "The full improved system prompt text"
+    },
+    "explanation": {
+      "type": "string",
+      "description": "Brief explanation of what was improved and why"
+    }
+  },
+  "additionalProperties": false
+}`
+}
+
+// SetEnvVars updates the environment variables injected into Claude subprocesses.
+func (p *PromptImprover) SetEnvVars(envVars map[string]string) {
+	p.envVars = envVars
 }
 
 // ImprovePrompt takes a draft system prompt and agent context, then returns
@@ -52,37 +78,42 @@ Improve this system prompt following these principles:
 7. Keep the prompt concise but comprehensive - remove fluff, add substance
 8. If the draft is empty or very minimal, create a solid starting prompt based on the agent context
 
-Respond ONLY with a JSON object in this exact format (no markdown, no explanation outside JSON):
-{"improved_prompt": "the full improved system prompt text", "explanation": "brief explanation of what was improved and why"}`, metaContext, draft)
+Return the improved prompt and explanation.`, metaContext, draft)
 
 	proc, err := claude.StartProcess(ctx, claude.ProcessOptions{
 		Model:       "sonnet",
 		Prompt:      prompt,
 		Permissions: "default",
+		JSONSchema:  promptImproveJSONSchema(),
+		Env:         p.envVars,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("start prompt improver: %w", err)
 	}
 
-	// Collect all output
-	var resultText strings.Builder
+	// Collect all output. With --json-schema, the result event contains validated JSON.
+	var resultJSON string
+	var assistantText strings.Builder
 	for event := range proc.Events() {
 		switch event.Type {
 		case "result":
-			resultText.WriteString(event.Result)
+			resultJSON = event.Result
 		case "assistant":
 			text := claude.ExtractTextContent(event)
 			if text != "" {
-				resultText.WriteString(text)
+				assistantText.WriteString(text)
 			}
 		}
 	}
 
 	<-proc.Done()
 
-	// Parse JSON response
-	raw := resultText.String()
-	raw = extractJSON(raw)
+	// Primary path: parse the result event (validated by --json-schema)
+	raw := resultJSON
+	if raw == "" {
+		// Fallback: try assistant text with brace-depth extraction
+		raw = extractJSON(assistantText.String())
+	}
 
 	var result PromptImproveResult
 	if err := json.Unmarshal([]byte(raw), &result); err != nil {

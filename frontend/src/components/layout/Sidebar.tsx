@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -19,7 +20,7 @@ const navItems = [
   { path: '/sessions', label: 'Sessions', icon: Play },
 ]
 
-export function Sidebar() {
+export const Sidebar = memo(function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -29,7 +30,6 @@ export function Sidebar() {
       <div className="p-4 border-b border-white/[0.06] flex items-center gap-3">
         <div className="relative">
           <img src={logoSvg} alt="Shannon" className="w-11 h-11" />
-          <div className="absolute inset-0 rounded-lg bg-brand-gradient opacity-[0.08] blur-md" />
         </div>
         <div>
           <h1 className="text-sm font-bold font-display text-zinc-100 tracking-tight leading-none">
@@ -50,7 +50,7 @@ export function Sidebar() {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 ${
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium  ${
                 isActive
                   ? 'bg-brand-gradient-subtle text-zinc-100 shadow-inner-brand'
                   : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
@@ -74,7 +74,7 @@ export function Sidebar() {
       <div className="p-3 border-t border-white/[0.06]">
         <button
           onClick={() => navigate('/settings')}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 ${
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium  ${
             location.pathname === '/settings'
               ? 'bg-brand-gradient-subtle text-zinc-100 shadow-inner-brand'
               : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
@@ -93,4 +93,4 @@ export function Sidebar() {
       </div>
     </aside>
   )
-}
+})

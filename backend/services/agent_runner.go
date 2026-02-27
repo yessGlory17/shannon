@@ -8,6 +8,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -18,21 +19,91 @@ type AgentRunner struct {
 	mu        sync.RWMutex
 	wailsCtx  context.Context
 	cliPath   string
+	envVars   map[string]string // env vars to inject into Claude subprocesses
 
 	// Event buffer: keeps all emitted events per task for later retrieval
 	eventBuf   map[string][]claude.TaskStreamEvent
 	eventBufMu sync.RWMutex
+
+	// Async event dispatch queue — decouples event production from Wails emission
+	emitQueue chan claude.TaskStreamEvent
+	emitOnce  sync.Once
 }
 
-func NewAgentRunner(cliPath string) *AgentRunner {
+func NewAgentRunner(cliPath string, envVars map[string]string) *AgentRunner {
 	if cliPath == "" {
 		cliPath = "claude"
 	}
 	return &AgentRunner{
 		processes: make(map[string]*claude.Process),
 		cliPath:   cliPath,
+		envVars:   envVars,
 		eventBuf:  make(map[string][]claude.TaskStreamEvent),
+		emitQueue: make(chan claude.TaskStreamEvent, 4096),
 	}
+}
+
+// startEmitLoop starts the background goroutine that drains emitQueue and
+// sends events to the Wails frontend. It batches consecutive text events for
+// the same task that arrive within a short window to reduce IPC overhead.
+func (ar *AgentRunner) startEmitLoop() {
+	ar.emitOnce.Do(func() {
+		go func() {
+			// Batch timer: flush accumulated text after this interval
+			const batchWindow = 16 * time.Millisecond
+			timer := time.NewTimer(batchWindow)
+			timer.Stop()
+
+			var pending *claude.TaskStreamEvent // accumulated text event
+
+			flush := func() {
+				if pending == nil {
+					return
+				}
+				if ar.wailsCtx != nil {
+					wailsRuntime.EventsEmit(ar.wailsCtx, "task:stream", *pending)
+				}
+				pending = nil
+			}
+
+			for {
+				select {
+				case evt, ok := <-ar.emitQueue:
+					if !ok {
+						flush()
+						return
+					}
+					// Batch consecutive text events for the same task
+					if evt.Type == "text" && pending != nil && pending.TaskID == evt.TaskID && pending.Type == "text" {
+						pending.Content += evt.Content
+						continue
+					}
+					// Different event type or task — flush pending first
+					flush()
+					if evt.Type == "text" {
+						cp := evt
+						pending = &cp
+						timer.Reset(batchWindow)
+						continue
+					}
+					// Non-text events are dispatched immediately
+					if ar.wailsCtx != nil {
+						wailsRuntime.EventsEmit(ar.wailsCtx, "task:stream", evt)
+					}
+
+				case <-timer.C:
+					flush()
+				}
+			}
+		}()
+	})
+}
+
+// SetEnvVars updates the environment variables injected into Claude subprocesses.
+func (ar *AgentRunner) SetEnvVars(envVars map[string]string) {
+	ar.mu.Lock()
+	defer ar.mu.Unlock()
+	ar.envVars = envVars
 }
 
 // SetWailsContext sets the Wails runtime context for event emission.
@@ -69,6 +140,37 @@ func (ar *AgentRunner) GetSessionEvents(taskIDs []string) map[string][]claude.Ta
 	return result
 }
 
+// GetTaskEventCount returns the number of buffered events for a task.
+func (ar *AgentRunner) GetTaskEventCount(taskID string) int {
+	ar.eventBufMu.RLock()
+	defer ar.eventBufMu.RUnlock()
+	return len(ar.eventBuf[taskID])
+}
+
+// GetTaskEventRange returns a slice of events for a task (start inclusive, end exclusive).
+// Clamps to valid bounds. Returns nil if no events exist.
+func (ar *AgentRunner) GetTaskEventRange(taskID string, start, end int) []claude.TaskStreamEvent {
+	ar.eventBufMu.RLock()
+	defer ar.eventBufMu.RUnlock()
+	events := ar.eventBuf[taskID]
+	if events == nil {
+		return nil
+	}
+	n := len(events)
+	if start < 0 {
+		start = 0
+	}
+	if end > n {
+		end = n
+	}
+	if start >= end {
+		return nil
+	}
+	result := make([]claude.TaskStreamEvent, end-start)
+	copy(result, events[start:end])
+	return result
+}
+
 // CleanupTaskEvents removes buffered events for a task.
 func (ar *AgentRunner) CleanupTaskEvents(taskID string) {
 	ar.eventBufMu.Lock()
@@ -77,23 +179,32 @@ func (ar *AgentRunner) CleanupTaskEvents(taskID string) {
 }
 
 // bufferEvent stores an event in the in-memory buffer.
+// Caps at 2000 events per task to prevent unbounded memory growth.
 func (ar *AgentRunner) bufferEvent(taskID string, event claude.TaskStreamEvent) {
 	ar.eventBufMu.Lock()
 	defer ar.eventBufMu.Unlock()
-	ar.eventBuf[taskID] = append(ar.eventBuf[taskID], event)
+	buf := ar.eventBuf[taskID]
+	if len(buf) >= 2000 {
+		buf = buf[len(buf)-1500:]
+	}
+	ar.eventBuf[taskID] = append(buf, event)
 }
 
 // RunTaskOptions configures a RunTask invocation.
 type RunTaskOptions struct {
-	SessionID   string                 // Claude session ID for --resume (empty = new session)
-	Prompt      string                 // Override task prompt (used for follow-ups)
-	OnSessionID func(sessionID string) // Callback when Claude session_id is received
+	SessionID     string                 // Claude session ID for --resume (empty = new session)
+	Prompt        string                 // Override task prompt (used for follow-ups)
+	MCPConfigPath string                 // Explicit path to .mcp.json for --mcp-config
+	OnSessionID   func(sessionID string) // Callback when Claude session_id is received
 }
 
 // RunResult carries information about how the task run completed.
 type RunResult struct {
 	NeedsInput bool   // true if the agent's output indicates it needs user input
 	LastText   string // the last text output from the agent (for displaying in the UI)
+	EventCount int    // number of stream events received from Claude
+	ExitCode   int    // process exit code
+	Stderr     string // captured stderr output (useful for diagnosing silent failures)
 }
 
 // RunTask starts a Claude Code process for a task with the given agent configuration.
@@ -110,14 +221,17 @@ func (ar *AgentRunner) RunTask(ctx context.Context, task *models.Task, agent *mo
 	}
 
 	proc, err := claude.StartProcess(ctx, claude.ProcessOptions{
-		CLIPath:      ar.cliPath,
-		WorkDir:      workDir,
-		Model:        agent.Model,
-		SystemPrompt: agent.SystemPrompt,
-		AllowedTools: agent.AllowedTools,
-		Permissions:  agent.Permissions,
-		Prompt:       prompt,
-		SessionID:    runOpts.SessionID,
+		CLIPath:         ar.cliPath,
+		WorkDir:         workDir,
+		Model:           agent.Model,
+		SystemPrompt:    agent.SystemPrompt,
+		AllowedTools:    agent.AllowedTools,
+		DisallowedTools: agent.DisallowedTools,
+		Permissions:     agent.Permissions,
+		Prompt:          prompt,
+		SessionID:       runOpts.SessionID,
+		MCPConfigPath:   runOpts.MCPConfigPath,
+		Env:             ar.envVars,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("start claude (%s): %w", ar.cliPath, err)
@@ -157,9 +271,9 @@ func (ar *AgentRunner) RunTask(ctx context.Context, task *models.Task, agent *mo
 			}
 		}
 
-		// Capture result text
+		// Capture result text via lastText — avoid writing directly to task struct
+		// to prevent data races. Callers apply ResultText from RunResult.LastText.
 		if event.Type == "result" {
-			task.ResultText = event.Result
 			if event.Result != "" {
 				lastText = event.Result
 			}
@@ -167,7 +281,7 @@ func (ar *AgentRunner) RunTask(ctx context.Context, task *models.Task, agent *mo
 	}
 	log.Printf("[runner] task %s: stream ended after %d events", task.ID[:8], eventCount)
 
-	// Emit done event
+	// Emit done event — use async queue for consistency
 	doneEvent := claude.TaskStreamEvent{
 		TaskID:  task.ID,
 		Type:    "done",
@@ -177,22 +291,40 @@ func (ar *AgentRunner) RunTask(ctx context.Context, task *models.Task, agent *mo
 		},
 	}
 	ar.bufferEvent(task.ID, doneEvent)
-	if ar.wailsCtx != nil {
-		wailsRuntime.EventsEmit(ar.wailsCtx, "task:stream", doneEvent)
+	ar.startEmitLoop()
+	select {
+	case ar.emitQueue <- doneEvent:
+	default:
+		if ar.wailsCtx != nil {
+			wailsRuntime.EventsEmit(ar.wailsCtx, "task:stream", doneEvent)
+		}
 	}
 
+	stderrOutput := proc.Stderr()
+
 	if proc.Err() != nil {
-		stderrOutput := proc.Stderr()
 		if stderrOutput != "" {
 			return nil, fmt.Errorf("claude process: %w\nstderr: %s", proc.Err(), stderrOutput)
 		}
 		return nil, fmt.Errorf("claude process: %w", proc.Err())
 	}
 
+	// If we received 0 events, something went wrong — Claude likely failed silently
+	if eventCount == 0 {
+		errMsg := "claude process produced no output (0 events)"
+		if stderrOutput != "" {
+			errMsg = fmt.Sprintf("claude process produced no output (0 events)\nstderr: %s", stderrOutput)
+		}
+		return nil, fmt.Errorf("%s", errMsg)
+	}
+
 	// Detect if the agent's output indicates it needs user input
 	result := &RunResult{
 		LastText:   lastText,
 		NeedsInput: detectNeedsInput(lastText),
+		EventCount: eventCount,
+		ExitCode:   proc.ExitCode(),
+		Stderr:     stderrOutput,
 	}
 	return result, nil
 }
@@ -322,8 +454,14 @@ func (ar *AgentRunner) emitTaskEvent(taskID string, event claude.StreamEvent) {
 	// Buffer event for later retrieval
 	ar.bufferEvent(taskID, taskEvent)
 
-	// Emit to frontend via Wails
-	if ar.wailsCtx != nil {
-		wailsRuntime.EventsEmit(ar.wailsCtx, "task:stream", taskEvent)
+	// Async emit to frontend via Wails — non-blocking
+	ar.startEmitLoop()
+	select {
+	case ar.emitQueue <- taskEvent:
+	default:
+		// Queue full — emit directly to avoid dropping events
+		if ar.wailsCtx != nil {
+			wailsRuntime.EventsEmit(ar.wailsCtx, "task:stream", taskEvent)
+		}
 	}
 }

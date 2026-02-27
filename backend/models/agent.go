@@ -58,14 +58,18 @@ func (m *StringMap) Scan(value any) error {
 }
 
 type Agent struct {
-	ID           string      `json:"id" gorm:"primaryKey"`
-	Name         string      `json:"name"`
-	Description  string      `json:"description"`
-	Model        string      `json:"model"`
-	SystemPrompt string      `json:"system_prompt"`
-	AllowedTools StringSlice `json:"allowed_tools" gorm:"type:text"`
-	MCPServerIDs StringSlice `json:"mcp_server_ids" gorm:"type:text"`
-	Permissions  string      `json:"permissions"`
-	CreatedAt    time.Time   `json:"created_at"`
-	UpdatedAt    time.Time   `json:"updated_at"`
+	ID              string      `json:"id" gorm:"primaryKey"`
+	Name            string      `json:"name"`
+	Description     string      `json:"description"`
+	Model           string      `json:"model"`
+	SystemPrompt    string      `json:"system_prompt"`
+	AllowedTools    StringSlice `json:"allowed_tools" gorm:"type:text"`
+	DisallowedTools StringSlice `json:"disallowed_tools" gorm:"type:text"`  // tool deny patterns (e.g., "Bash(rm *)")
+	MCPServerIDs    StringSlice `json:"mcp_server_ids" gorm:"type:text"`
+	Permissions     string      `json:"permissions"`
+	ProtectedPaths  StringSlice `json:"protected_paths" gorm:"type:text"`   // paths agents cannot modify
+	ReadOnlyPaths   StringSlice `json:"read_only_paths" gorm:"type:text"`   // paths agents can only read
+	MaxRetries      int         `json:"max_retries" gorm:"default:0"`       // default retry count for tasks
+	CreatedAt       time.Time   `json:"created_at"`
+	UpdatedAt       time.Time   `json:"updated_at"`
 }

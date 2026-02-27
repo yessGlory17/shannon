@@ -50,6 +50,230 @@ export namespace config {
 
 export namespace main {
 	
+	export class ActiveTask {
+	    id: string;
+	    title: string;
+	    session_id: string;
+	    agent_id: string;
+	    agent_name: string;
+	    started_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ActiveTask(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.title = source["title"];
+	        this.session_id = source["session_id"];
+	        this.agent_id = source["agent_id"];
+	        this.agent_name = source["agent_name"];
+	        this.started_at = source["started_at"];
+	    }
+	}
+	export class AgentPerformance {
+	    agent_id: string;
+	    agent_name: string;
+	    model: string;
+	    completed: number;
+	    failed: number;
+	    total: number;
+	    success_rate: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new AgentPerformance(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.agent_id = source["agent_id"];
+	        this.agent_name = source["agent_name"];
+	        this.model = source["model"];
+	        this.completed = source["completed"];
+	        this.failed = source["failed"];
+	        this.total = source["total"];
+	        this.success_rate = source["success_rate"];
+	    }
+	}
+	export class CodeReviewStats {
+	    pending_reviews: number;
+	    files_changed: number;
+	    accepted_tasks: number;
+	    rejected_tasks: number;
+	    accept_rate: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new CodeReviewStats(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.pending_reviews = source["pending_reviews"];
+	        this.files_changed = source["files_changed"];
+	        this.accepted_tasks = source["accepted_tasks"];
+	        this.rejected_tasks = source["rejected_tasks"];
+	        this.accept_rate = source["accept_rate"];
+	    }
+	}
+	export class DailyCount {
+	    date: string;
+	    completed: number;
+	    failed: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new DailyCount(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.date = source["date"];
+	        this.completed = source["completed"];
+	        this.failed = source["failed"];
+	    }
+	}
+	export class ProjectActivity {
+	    project_id: string;
+	    project_name: string;
+	    session_count: number;
+	    task_count: number;
+	    test_pass_rate: number;
+	    build_pass_rate: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProjectActivity(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.project_id = source["project_id"];
+	        this.project_name = source["project_name"];
+	        this.session_count = source["session_count"];
+	        this.task_count = source["task_count"];
+	        this.test_pass_rate = source["test_pass_rate"];
+	        this.build_pass_rate = source["build_pass_rate"];
+	    }
+	}
+	export class TeamActivity {
+	    team_id: string;
+	    team_name: string;
+	    strategy: string;
+	    task_count: number;
+	    agent_count: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new TeamActivity(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.team_id = source["team_id"];
+	        this.team_name = source["team_name"];
+	        this.strategy = source["strategy"];
+	        this.task_count = source["task_count"];
+	        this.agent_count = source["agent_count"];
+	    }
+	}
+	export class RecentSession {
+	    id: string;
+	    name: string;
+	    project_id: string;
+	    status: string;
+	    total_tasks: number;
+	    done_tasks: number;
+	    created_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RecentSession(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.project_id = source["project_id"];
+	        this.status = source["status"];
+	        this.total_tasks = source["total_tasks"];
+	        this.done_tasks = source["done_tasks"];
+	        this.created_at = source["created_at"];
+	    }
+	}
+	export class StatusCount {
+	    label: string;
+	    count: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new StatusCount(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.label = source["label"];
+	        this.count = source["count"];
+	    }
+	}
+	export class DashboardDetails {
+	    project_count: number;
+	    agent_count: number;
+	    team_count: number;
+	    session_count: number;
+	    running_tasks: number;
+	    task_status_dist: StatusCount[];
+	    session_status_dist: StatusCount[];
+	    task_success_rate: number;
+	    task_completion_trend: DailyCount[];
+	    agent_leaderboard: AgentPerformance[];
+	    model_distribution: StatusCount[];
+	    recent_sessions: RecentSession[];
+	    active_tasks: ActiveTask[];
+	    code_review: CodeReviewStats;
+	    team_activities: TeamActivity[];
+	    strategy_dist: StatusCount[];
+	    project_activities: ProjectActivity[];
+	
+	    static createFrom(source: any = {}) {
+	        return new DashboardDetails(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.project_count = source["project_count"];
+	        this.agent_count = source["agent_count"];
+	        this.team_count = source["team_count"];
+	        this.session_count = source["session_count"];
+	        this.running_tasks = source["running_tasks"];
+	        this.task_status_dist = this.convertValues(source["task_status_dist"], StatusCount);
+	        this.session_status_dist = this.convertValues(source["session_status_dist"], StatusCount);
+	        this.task_success_rate = source["task_success_rate"];
+	        this.task_completion_trend = this.convertValues(source["task_completion_trend"], DailyCount);
+	        this.agent_leaderboard = this.convertValues(source["agent_leaderboard"], AgentPerformance);
+	        this.model_distribution = this.convertValues(source["model_distribution"], StatusCount);
+	        this.recent_sessions = this.convertValues(source["recent_sessions"], RecentSession);
+	        this.active_tasks = this.convertValues(source["active_tasks"], ActiveTask);
+	        this.code_review = this.convertValues(source["code_review"], CodeReviewStats);
+	        this.team_activities = this.convertValues(source["team_activities"], TeamActivity);
+	        this.strategy_dist = this.convertValues(source["strategy_dist"], StatusCount);
+	        this.project_activities = this.convertValues(source["project_activities"], ProjectActivity);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class DashboardStats {
 	    project_count: number;
 	    agent_count: number;
@@ -70,6 +294,8 @@ export namespace main {
 	        this.running_tasks = source["running_tasks"];
 	    }
 	}
+	
+	
 	export class SessionStats {
 	    total_tasks: number;
 	    completed_tasks: number;
@@ -90,6 +316,7 @@ export namespace main {
 	        this.pending_tasks = source["pending_tasks"];
 	    }
 	}
+	
 
 }
 
@@ -102,8 +329,12 @@ export namespace models {
 	    model: string;
 	    system_prompt: string;
 	    allowed_tools: string[];
+	    disallowed_tools: string[];
 	    mcp_server_ids: string[];
 	    permissions: string;
+	    protected_paths: string[];
+	    read_only_paths: string[];
+	    max_retries: number;
 	    // Go type: time
 	    created_at: any;
 	    // Go type: time
@@ -121,8 +352,12 @@ export namespace models {
 	        this.model = source["model"];
 	        this.system_prompt = source["system_prompt"];
 	        this.allowed_tools = source["allowed_tools"];
+	        this.disallowed_tools = source["disallowed_tools"];
 	        this.mcp_server_ids = source["mcp_server_ids"];
 	        this.permissions = source["permissions"];
+	        this.protected_paths = source["protected_paths"];
+	        this.read_only_paths = source["read_only_paths"];
+	        this.max_retries = source["max_retries"];
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.updated_at = this.convertValues(source["updated_at"], null);
 	    }
@@ -195,6 +430,26 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class PaginatedResponse {
+	    items: any;
+	    total_count: number;
+	    page: number;
+	    page_size: number;
+	    total_pages: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PaginatedResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.items = source["items"];
+	        this.total_count = source["total_count"];
+	        this.page = source["page"];
+	        this.page_size = source["page_size"];
+	        this.total_pages = source["total_pages"];
+	    }
+	}
 	export class Project {
 	    id: string;
 	    name: string;
@@ -202,6 +457,7 @@ export namespace models {
 	    test_command?: string;
 	    build_command?: string;
 	    setup_commands: string[];
+	    claude_md?: string;
 	    // Go type: time
 	    created_at: any;
 	    // Go type: time
@@ -219,6 +475,7 @@ export namespace models {
 	        this.test_command = source["test_command"];
 	        this.build_command = source["build_command"];
 	        this.setup_commands = source["setup_commands"];
+	        this.claude_md = source["claude_md"];
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.updated_at = this.convertValues(source["updated_at"], null);
 	    }
@@ -291,12 +548,17 @@ export namespace models {
 	    session_id: string;
 	    title: string;
 	    prompt: string;
+	    original_prompt?: string;
 	    status: string;
 	    agent_id?: string;
 	    team_id?: string;
 	    dependencies: string[];
 	    workspace_path?: string;
+	    mcp_config_path?: string;
 	    claude_session_id?: string;
+	    max_retries: number;
+	    retry_count: number;
+	    resume_count: number;
 	    exit_code: number;
 	    result_text?: string;
 	    files_changed: string[];
@@ -323,12 +585,17 @@ export namespace models {
 	        this.session_id = source["session_id"];
 	        this.title = source["title"];
 	        this.prompt = source["prompt"];
+	        this.original_prompt = source["original_prompt"];
 	        this.status = source["status"];
 	        this.agent_id = source["agent_id"];
 	        this.team_id = source["team_id"];
 	        this.dependencies = source["dependencies"];
 	        this.workspace_path = source["workspace_path"];
+	        this.mcp_config_path = source["mcp_config_path"];
 	        this.claude_session_id = source["claude_session_id"];
+	        this.max_retries = source["max_retries"];
+	        this.retry_count = source["retry_count"];
+	        this.resume_count = source["resume_count"];
 	        this.exit_code = source["exit_code"];
 	        this.result_text = source["result_text"];
 	        this.files_changed = source["files_changed"];

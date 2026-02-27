@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react'
+import { lazy, memo, Suspense, useState, useEffect, useMemo, useCallback } from 'react'
 import {
   FileCode, FilePlus, FileX, Check, X, Pencil,
   Loader2, ChevronRight, CheckCircle, XCircle, Undo2,
 } from 'lucide-react'
-import Editor from '@monaco-editor/react'
 import { useSessionStore } from '../../stores/sessionStore'
+
+const Editor = lazy(() => import('@monaco-editor/react'))
 import type { Task, DiffResult, FileDiff, DiffHunk } from '../../types'
 
 interface ChangesPanelProps {
@@ -338,7 +339,7 @@ function DiffViewer({ file, disabled, onAcceptHunk, onRejectHunk, onAcceptFile, 
   )
 }
 
-function HunkBlock({ hunk, disabled, onAccept, onReject }: {
+const HunkBlock = memo(function HunkBlock({ hunk, disabled, onAccept, onReject }: {
   hunk: DiffHunk
   disabled: boolean
   onAccept: () => void
@@ -400,7 +401,7 @@ function HunkBlock({ hunk, disabled, onAccept, onReject }: {
       </div>
     </div>
   )
-}
+})
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -450,7 +451,7 @@ function InlineEditor({ filePath, content, loading, saving, onChange, onSave, on
           <button
             onClick={onSave}
             disabled={saving}
-            className="flex items-center gap-1 px-2 py-0.5 bg-brand-gradient hover:opacity-90 text-white text-xs rounded-lg transition-all disabled:opacity-50"
+            className="flex items-center gap-1 px-2 py-0.5 bg-brand-gradient hover:opacity-90 text-white text-xs rounded-lg transition-colors disabled:opacity-50"
           >
             {saving ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
             Save
@@ -458,21 +459,23 @@ function InlineEditor({ filePath, content, loading, saving, onChange, onSave, on
         </div>
       </div>
       <div className="flex-1 min-h-0">
-        <Editor
-          theme="vs-dark"
-          language={lang}
-          value={content}
-          onChange={(val) => onChange(val || '')}
-          options={{
-            minimap: { enabled: false },
-            fontSize: 12,
-            lineNumbers: 'on',
-            scrollBeyondLastLine: false,
-            wordWrap: 'on',
-            renderWhitespace: 'selection',
-            tabSize: 2,
-          }}
-        />
+        <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 size={16} className="animate-spin text-zinc-500" /></div>}>
+          <Editor
+            theme="vs-dark"
+            language={lang}
+            value={content}
+            onChange={(val) => onChange(val || '')}
+            options={{
+              minimap: { enabled: false },
+              fontSize: 12,
+              lineNumbers: 'on',
+              scrollBeyondLastLine: false,
+              wordWrap: 'on',
+              renderWhitespace: 'selection',
+              tabSize: 2,
+            }}
+          />
+        </Suspense>
       </div>
     </div>
   )

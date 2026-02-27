@@ -42,6 +42,25 @@ func (s *SessionStore) List() ([]models.Session, error) {
 	return sessions, nil
 }
 
+func (s *SessionStore) ListPaginated(page, pageSize int) (*models.PaginatedResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	var total int64
+	if err := s.db.Model(&models.Session{}).Count(&total).Error; err != nil {
+		return nil, err
+	}
+	var sessions []models.Session
+	offset := (page - 1) * pageSize
+	if err := s.db.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&sessions).Error; err != nil {
+		return nil, err
+	}
+	return models.NewPaginatedResponse(sessions, total, page, pageSize), nil
+}
+
 func (s *SessionStore) ListByProject(projectID string) ([]models.Session, error) {
 	var sessions []models.Session
 	if err := s.db.Where("project_id = ?", projectID).Order("created_at DESC").Find(&sessions).Error; err != nil {

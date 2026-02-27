@@ -3,16 +3,23 @@ package models
 import "time"
 
 type Task struct {
-	ID            string      `json:"id" gorm:"primaryKey"`
-	SessionID     string      `json:"session_id" gorm:"index"`
-	Title         string      `json:"title"`
-	Prompt        string      `json:"prompt"`
-	Status        TaskStatus  `json:"status" gorm:"index;default:pending"`
-	AgentID       string      `json:"agent_id,omitempty"`
-	TeamID        string      `json:"team_id,omitempty"`
-	Dependencies  StringSlice `json:"dependencies" gorm:"type:text"`
-	WorkspacePath    string      `json:"workspace_path,omitempty"`
-	ClaudeSessionID  string      `json:"claude_session_id,omitempty"`
+	ID              string      `json:"id" gorm:"primaryKey"`
+	SessionID       string      `json:"session_id" gorm:"index;index:idx_task_session_status"`
+	Title           string      `json:"title"`
+	Prompt          string      `json:"prompt"`
+	OriginalPrompt  string      `json:"original_prompt,omitempty" gorm:"type:text"` // preserved for retry
+	Status          TaskStatus  `json:"status" gorm:"index;index:idx_task_session_status;default:pending"`
+	AgentID         string      `json:"agent_id,omitempty"`
+	TeamID          string      `json:"team_id,omitempty"`
+	Dependencies    StringSlice `json:"dependencies" gorm:"type:text"`
+	WorkspacePath   string      `json:"workspace_path,omitempty"`
+	MCPConfigPath   string      `json:"mcp_config_path,omitempty"`
+	ClaudeSessionID string      `json:"claude_session_id,omitempty"`
+
+	// Retry & Resume
+	MaxRetries  int `json:"max_retries" gorm:"default:0"`
+	RetryCount  int `json:"retry_count" gorm:"default:0"`
+	ResumeCount int `json:"resume_count" gorm:"default:0"`
 
 	// Results
 	ExitCode     int         `json:"exit_code"`

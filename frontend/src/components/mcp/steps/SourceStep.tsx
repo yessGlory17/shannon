@@ -88,7 +88,7 @@ export function SourceStep({ data, onChange }: SourceStepProps) {
           <button
             key={mode}
             onClick={() => selectSource(mode)}
-            className={`p-4 rounded-xl border text-left transition-all ${
+            className={`p-4 rounded-xl border text-left transition-colors ${
               data.source === mode
                 ? 'border-blue-500/40 bg-blue-600/10'
                 : 'border-white/[0.06] bg-[#111114] hover:border-white/[0.12]'
@@ -129,7 +129,7 @@ export function SourceStep({ data, onChange }: SourceStepProps) {
           {catalogLoading && catalog.length === 0 ? (
             <div className="grid grid-cols-2 gap-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-lg bg-white/[0.03] border border-white/[0.04] p-3 animate-pulse">
+                <div key={i} className="rounded-lg bg-white/[0.03] border border-white/[0.04] p-3">
                   <div className="h-4 bg-white/[0.06] rounded w-24 mb-2" />
                   <div className="h-3 bg-white/[0.04] rounded w-full" />
                 </div>
@@ -141,7 +141,7 @@ export function SourceStep({ data, onChange }: SourceStepProps) {
                 <button
                   key={item.id}
                   onClick={() => selectCatalogItem(item)}
-                  className={`p-3 rounded-lg border text-left transition-all ${
+                  className={`p-3 rounded-lg border text-left transition-colors ${
                     data.catalogItem?.qualifiedName === item.qualifiedName
                       ? 'border-blue-500/40 bg-blue-600/10'
                       : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]'
@@ -222,7 +222,7 @@ export function SourceStep({ data, onChange }: SourceStepProps) {
           <button
             onClick={handleJsonParse}
             disabled={!jsonInput.trim() || jsonParsing}
-            className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm disabled:opacity-50"
+            className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-colors shadow-brand-sm disabled:opacity-50"
           >
             {jsonParsing ? 'Parsing...' : 'Parse JSON'}
           </button>

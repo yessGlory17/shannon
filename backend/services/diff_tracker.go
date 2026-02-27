@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -23,7 +24,7 @@ type DiffHunk struct {
 // FileDiff represents changes to a single file.
 type FileDiff struct {
 	Path   string     `json:"path"`
-	Status string     `json:"status"` // "added", "modified", "deleted"
+	Status string     `json:"status"` // "added", "modified", "deleted", "renamed"
 	Diff   string     `json:"diff"`   // unified diff content
 	Hunks  []DiffHunk `json:"hunks"`  // parsed structured hunks
 }
@@ -34,7 +35,7 @@ type DiffResult struct {
 	Total int        `json:"total"`
 }
 
-// DiffTracker computes file differences between workspace and original project.
+// DiffTracker computes file differences using git.
 type DiffTracker struct{}
 
 func NewDiffTracker() *DiffTracker {
@@ -104,51 +105,72 @@ func ParseHunks(unifiedDiff string) []DiffHunk {
 	return hunks
 }
 
-// excludeDirs lists directories to skip when computing diffs.
-var excludeDirs = []string{
-	".git", "node_modules", ".next", "__pycache__", "vendor",
-	".venv", ".cache", ".claude", ".turbo",
+// hasGit checks whether the given directory is inside a git repository.
+func hasGit(dir string) bool {
+	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	return err == nil && strings.TrimSpace(string(out)) == "true"
 }
 
-// ComputeDiff compares a task workspace against the original project directory.
-func (dt *DiffTracker) ComputeDiff(originalPath, workspacePath string) (*DiffResult, error) {
-	// Use diff to find changes, excluding VCS and dependency directories
-	args := []string{"-rq"}
-	for _, dir := range excludeDirs {
-		args = append(args, "--exclude="+dir)
+// ComputeDiff computes uncommitted changes in a git project directory.
+// Uses `git status --porcelain` for file list and `git diff HEAD` for diffs.
+// If the directory is not a git repo, returns an empty result.
+func (dt *DiffTracker) ComputeDiff(projectPath string) (*DiffResult, error) {
+	if !hasGit(projectPath) {
+		return &DiffResult{}, nil
 	}
-	args = append(args, originalPath, workspacePath)
-	cmd := exec.Command("diff", args...)
-	output, _ := cmd.CombinedOutput() // diff returns exit code 1 when files differ
 
 	result := &DiffResult{}
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 
+	// Get file status list: staged + unstaged + untracked
+	cmd := exec.Command("git", "status", "--porcelain", "-uall")
+	cmd.Dir = projectPath
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("git status: %w", err)
+	}
+
+	statusOutput := strings.TrimSpace(string(out))
+	if statusOutput == "" {
+		return result, nil
+	}
+
+	lines := strings.Split(statusOutput, "\n")
 	for _, line := range lines {
-		if line == "" {
+		if len(line) < 4 {
 			continue
 		}
 
-		var fd FileDiff
+		// git status --porcelain format: XY <path>
+		// X = index status, Y = worktree status
+		xy := line[:2]
+		path := strings.TrimSpace(line[3:])
 
-		if strings.HasPrefix(line, "Only in "+workspacePath) {
-			// New file added
-			path := extractPath(line, workspacePath)
-			fd = FileDiff{Path: path, Status: "added"}
-			fd.Diff = getFileDiff(originalPath, workspacePath, path)
+		// Handle renamed files: "R  old -> new"
+		if strings.Contains(path, " -> ") {
+			parts := strings.SplitN(path, " -> ", 2)
+			path = parts[1]
+		}
+
+		var fd FileDiff
+		fd.Path = path
+
+		switch {
+		case xy == "??" || xy[0] == 'A' || xy[1] == 'A':
+			fd.Status = "added"
+		case xy[0] == 'D' || xy[1] == 'D':
+			fd.Status = "deleted"
+		case xy[0] == 'R' || xy[1] == 'R':
+			fd.Status = "renamed"
+		default:
+			fd.Status = "modified"
+		}
+
+		// Get unified diff for this file
+		if fd.Status != "deleted" {
+			fd.Diff = dt.getGitFileDiff(projectPath, path)
 			fd.Hunks = ParseHunks(fd.Diff)
-		} else if strings.HasPrefix(line, "Only in "+originalPath) {
-			// File deleted
-			path := extractPath(line, originalPath)
-			fd = FileDiff{Path: path, Status: "deleted"}
-		} else if strings.Contains(line, " differ") {
-			// File modified
-			path := extractDifferPath(line, originalPath)
-			fd = FileDiff{Path: path, Status: "modified"}
-			fd.Diff = getFileDiff(originalPath, workspacePath, path)
-			fd.Hunks = ParseHunks(fd.Diff)
-		} else {
-			continue
 		}
 
 		result.Files = append(result.Files, fd)
@@ -158,9 +180,40 @@ func (dt *DiffTracker) ComputeDiff(originalPath, workspacePath string) (*DiffRes
 	return result, nil
 }
 
-// GetChangedFiles returns the list of changed file paths.
-func (dt *DiffTracker) GetChangedFiles(originalPath, workspacePath string) ([]string, error) {
-	result, err := dt.ComputeDiff(originalPath, workspacePath)
+// getGitFileDiff returns the unified diff for a single file.
+// For tracked files: git diff HEAD -- <file>
+// For untracked (new) files: generates a diff showing all lines as additions.
+func (dt *DiffTracker) getGitFileDiff(projectPath, relPath string) string {
+	// Try git diff HEAD first (covers staged + unstaged for tracked files)
+	cmd := exec.Command("git", "diff", "HEAD", "--", relPath)
+	cmd.Dir = projectPath
+	out, err := cmd.Output()
+	if err == nil && len(out) > 0 {
+		return string(out)
+	}
+
+	// For untracked files, git diff HEAD won't work. Show content as new file diff.
+	fullPath := filepath.Join(projectPath, relPath)
+	data, err := os.ReadFile(fullPath)
+	if err != nil {
+		return ""
+	}
+
+	// Build a synthetic unified diff for the new file
+	content := string(data)
+	lines := strings.Split(content, "\n")
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("--- /dev/null\n+++ b/%s\n", relPath))
+	sb.WriteString(fmt.Sprintf("@@ -0,0 +1,%d @@\n", len(lines)))
+	for _, line := range lines {
+		sb.WriteString("+" + line + "\n")
+	}
+	return sb.String()
+}
+
+// GetChangedFiles returns the list of changed file paths using git.
+func (dt *DiffTracker) GetChangedFiles(projectPath string) ([]string, error) {
+	result, err := dt.ComputeDiff(projectPath)
 	if err != nil {
 		return nil, err
 	}
@@ -172,92 +225,48 @@ func (dt *DiffTracker) GetChangedFiles(originalPath, workspacePath string) ([]st
 	return files, nil
 }
 
-// ApplyHunk applies a single hunk from workspace to the project using patch.
-func (dt *DiffTracker) ApplyHunk(projectPath, filePath string, hunk DiffHunk, originalPath string) error {
-	origFile := fmt.Sprintf("%s/%s", originalPath, filePath)
-	projFile := fmt.Sprintf("%s/%s", projectPath, filePath)
-
+// RevertHunk reverts a single hunk in the project using reverse patch.
+func (dt *DiffTracker) RevertHunk(projectPath, filePath string, hunk DiffHunk) error {
 	// Build a minimal unified diff for this single hunk
-	patchContent := fmt.Sprintf("--- %s\n+++ %s\n%s\n%s\n",
-		origFile, projFile, hunk.Header, hunk.Content)
+	patchContent := fmt.Sprintf("--- a/%s\n+++ b/%s\n%s\n%s\n",
+		filePath, filePath, hunk.Header, hunk.Content)
 
-	cmd := exec.Command("patch", "-p0", "--forward", "--no-backup-if-mismatch")
-	cmd.Dir = "/"
+	// Apply in reverse to undo the change
+	cmd := exec.Command("git", "apply", "--reverse", "--unidiff-zero")
+	cmd.Dir = projectPath
 	cmd.Stdin = strings.NewReader(patchContent)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("patch apply failed: %w (output: %s)", err, string(output))
+		return fmt.Errorf("git apply --reverse failed: %w (output: %s)", err, string(output))
 	}
 	return nil
 }
 
-// RevertHunk reverts a single hunk in the workspace using reverse patch.
-func (dt *DiffTracker) RevertHunk(workspacePath, filePath string, hunk DiffHunk, originalPath string) error {
-	origFile := fmt.Sprintf("%s/%s", originalPath, filePath)
-	workFile := fmt.Sprintf("%s/%s", workspacePath, filePath)
+// RevertFile restores a single file to its last committed state.
+// For untracked files, it removes the file.
+func (dt *DiffTracker) RevertFile(projectPath, filePath string) error {
+	fullPath := filepath.Join(projectPath, filePath)
 
-	// Build a patch from orig->workspace, then reverse-apply to workspace
-	patchContent := fmt.Sprintf("--- %s\n+++ %s\n%s\n%s\n",
-		origFile, workFile, hunk.Header, hunk.Content)
+	// Check if the file is tracked by git
+	cmd := exec.Command("git", "ls-files", "--error-unmatch", filePath)
+	cmd.Dir = projectPath
+	if err := cmd.Run(); err != nil {
+		// Untracked file — just remove it
+		return os.Remove(fullPath)
+	}
 
-	cmd := exec.Command("patch", "-R", "-p0", "--no-backup-if-mismatch")
-	cmd.Dir = "/"
-	cmd.Stdin = strings.NewReader(patchContent)
+	// Tracked file — restore to HEAD version
+	cmd = exec.Command("git", "checkout", "HEAD", "--", filePath)
+	cmd.Dir = projectPath
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("patch revert failed: %w (output: %s)", err, string(output))
+		return fmt.Errorf("git checkout failed: %w (output: %s)", err, string(output))
 	}
+
+	// Also unstage if it was staged
+	cmd = exec.Command("git", "reset", "HEAD", "--", filePath)
+	cmd.Dir = projectPath
+	cmd.Run() // ignore error — file may not be staged
+
 	return nil
-}
-
-// RevertFile restores a single file in workspace to its original version.
-func (dt *DiffTracker) RevertFile(workspacePath, filePath, originalPath string) error {
-	origFile := fmt.Sprintf("%s/%s", originalPath, filePath)
-	workFile := fmt.Sprintf("%s/%s", workspacePath, filePath)
-
-	data, err := os.ReadFile(origFile)
-	if err != nil {
-		return fmt.Errorf("read original: %w", err)
-	}
-	if err := os.WriteFile(workFile, data, 0644); err != nil {
-		return fmt.Errorf("write workspace: %w", err)
-	}
-	return nil
-}
-
-func getFileDiff(originalPath, workspacePath, relPath string) string {
-	origFile := fmt.Sprintf("%s/%s", originalPath, relPath)
-	workFile := fmt.Sprintf("%s/%s", workspacePath, relPath)
-
-	cmd := exec.Command("diff", "-u", origFile, workFile)
-	output, _ := cmd.CombinedOutput()
-	return string(output)
-}
-
-func extractPath(line, basePath string) string {
-	// "Only in /path/to/dir: filename" -> relative path
-	prefix := "Only in "
-	rest := strings.TrimPrefix(line, prefix)
-	parts := strings.SplitN(rest, ": ", 2)
-	if len(parts) != 2 {
-		return line
-	}
-	dir := strings.TrimPrefix(parts[0], basePath+"/")
-	if dir == parts[0] {
-		dir = strings.TrimPrefix(parts[0], basePath)
-	}
-	if dir == "" {
-		return parts[1]
-	}
-	return dir + "/" + parts[1]
-}
-
-func extractDifferPath(line, basePath string) string {
-	// "Files /orig/path and /work/path differ" -> relative path
-	parts := strings.Split(line, " and ")
-	if len(parts) < 2 {
-		return line
-	}
-	origPath := strings.TrimPrefix(parts[0], "Files ")
-	return strings.TrimPrefix(origPath, basePath+"/")
 }

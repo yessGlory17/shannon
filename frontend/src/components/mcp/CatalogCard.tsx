@@ -19,7 +19,7 @@ export function CatalogCard({
   formatUseCount,
 }: CatalogCardProps) {
   return (
-    <div className="rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card hover:shadow-card-hover p-4 flex flex-col transition-all duration-200">
+    <div className="rounded-xl bg-[#111114] border border-white/[0.06] hover:border-white/[0.10] shadow-card hover:shadow-card-hover p-4 flex flex-col transition-colors duration-200">
       <div className="flex items-start gap-3 mb-3">
         {item.iconUrl ? (
           <img
@@ -78,7 +78,7 @@ export function CatalogCard({
         ) : (
           <button
             onClick={onInstall}
-            className="flex items-center gap-1 px-2.5 py-1 bg-brand-gradient hover:opacity-90 text-white rounded-lg text-xs font-medium transition-all shadow-brand-sm"
+            className="flex items-center gap-1 px-2.5 py-1 bg-brand-gradient hover:opacity-90 text-white rounded-lg text-xs font-medium transition-colors shadow-brand-sm"
           >
             <Download size={12} />
             Install

@@ -61,10 +61,15 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
   g.setDefaultEdgeLabel(() => ({}))
   g.setGraph({ rankdir: 'LR', nodesep: 40, ranksep: 80 })
 
+  // Build lookup maps to avoid O(n) .find() calls in loops
+  const teamMap = new Map(teams.map((t) => [t.id, t]))
+  const agentMap = new Map(agents.map((a) => [a.id, a]))
+  const taskStatusMap = new Map(tasks.map((t) => [t.id, t.status]))
+
   const taskTeamMap = new Map<string, Team>()
   for (const task of tasks) {
     if (task.team_id) {
-      const team = teams.find((t) => t.id === task.team_id)
+      const team = teamMap.get(task.team_id)
       if (team && team.agent_ids.length > 0) {
         taskTeamMap.set(task.id, team)
       }
@@ -89,7 +94,7 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
           id: `dep-${depId}-${task.id}`,
           source: depId,
           target: task.id,
-          animated: tasks.find((t) => t.id === depId)?.status === 'running',
+          animated: taskStatusMap.get(depId) === 'running',
           style: { stroke: '#3f3f46', strokeWidth: 1.5 },
         })
         g.setEdge(depId, task.id)
@@ -130,7 +135,7 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
         }
 
         for (const tn of team.nodes) {
-          const agent = agents.find((a) => a.id === tn.agent_id)
+          const agent = agentMap.get(tn.agent_id)
           nodes.push({
             id: `${task.id}-agent-${tn.agent_id}`,
             type: 'teamSubAgent',
@@ -149,7 +154,7 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
       } else {
         for (let i = 0; i < team.agent_ids.length; i++) {
           const agentId = team.agent_ids[i]
-          const agent = agents.find((a) => a.id === agentId)
+          const agent = agentMap.get(agentId)
           nodes.push({
             id: `${task.id}-agent-${agentId}`,
             type: 'teamSubAgent',
@@ -180,7 +185,7 @@ function getLayoutedElements(tasks: Task[], agents: Agent[], teams: Team[], sele
     } else {
       const getAgentName = () => {
         if (task.agent_id) {
-          return agents.find((a) => a.id === task.agent_id)?.name || task.agent_id.slice(0, 8)
+          return agentMap.get(task.agent_id)?.name || task.agent_id.slice(0, 8)
         }
         return 'Unassigned'
       }

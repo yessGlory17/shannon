@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"sync"
 )
@@ -39,6 +40,14 @@ func StartProcess(ctx context.Context, opts ProcessOptions) (*Process, error) {
 	cmd := exec.CommandContext(ctx, cliPath, args...)
 	cmd.Dir = opts.WorkDir
 
+	// Merge extra env vars with parent process environment.
+	if len(opts.Env) > 0 {
+		cmd.Env = os.Environ()
+		for k, v := range opts.Env {
+			cmd.Env = append(cmd.Env, k+"="+v)
+		}
+	}
+
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, fmt.Errorf("stdout pipe: %w", err)
@@ -59,7 +68,7 @@ func StartProcess(ctx context.Context, opts ProcessOptions) (*Process, error) {
 		stdin:  stdin,
 		stdout: stdout,
 		stderr: stderr,
-		events: make(chan StreamEvent, 256),
+		events: make(chan StreamEvent, 1024),
 		done:   make(chan struct{}),
 	}
 
@@ -72,19 +81,26 @@ func StartProcess(ctx context.Context, opts ProcessOptions) (*Process, error) {
 	// Close stdin immediately - we pass prompt via args, not stdin
 	stdin.Close()
 
-	// Capture stderr in background for error reporting
+	// Capture stderr in background for error reporting.
+	// This goroutine exits when stderr is closed (process exit) or context is cancelled.
 	go func() {
 		buf := make([]byte, 4096)
 		for {
-			n, err := stderr.Read(buf)
+			n, readErr := stderr.Read(buf)
 			if n > 0 {
 				p.stderrMu.Lock()
 				p.stderrBuf.Write(buf[:n])
 				p.stderrMu.Unlock()
 				log.Printf("[claude] stderr: %s", string(buf[:n]))
 			}
-			if err != nil {
+			if readErr != nil {
 				break
+			}
+			// Check if context was cancelled to avoid blocking indefinitely
+			select {
+			case <-ctx.Done():
+				return
+			default:
 			}
 		}
 	}()
@@ -95,7 +111,6 @@ func StartProcess(ctx context.Context, opts ProcessOptions) (*Process, error) {
 		defer close(p.done)
 
 		log.Printf("[claude] starting stream parser")
-		eventCount := 0
 
 		if parseErr := ParseStreamEvents(stdout, p.events); parseErr != nil {
 			log.Printf("[claude] stream parse error: %v", parseErr)
@@ -104,7 +119,7 @@ func StartProcess(ctx context.Context, opts ProcessOptions) (*Process, error) {
 			p.mu.Unlock()
 		}
 
-		log.Printf("[claude] stream parser finished, %d events parsed", eventCount)
+		log.Printf("[claude] stream parser finished")
 
 		// Wait for process to finish
 		if waitErr := cmd.Wait(); waitErr != nil {
@@ -182,14 +197,16 @@ func buildArgs(opts ProcessOptions) []string {
 		args = append(args, "--resume", opts.SessionID)
 	}
 
-	// Only set model and system prompt for new sessions.
-	// Resumed sessions already have these values from the original session;
-	// passing them again can cause CLI errors or unexpected behavior.
-	if !isResume {
-		if opts.Model != "" {
-			args = append(args, "--model", opts.Model)
-		}
+	// Always pass --model so the CLI can resolve the correct inference profile
+	// (e.g., Bedrock requires inference profile IDs, not foundation model IDs).
+	// On resume, this overrides the model stored in the session file.
+	if opts.Model != "" {
+		args = append(args, "--model", opts.Model)
+	}
 
+	// System prompt, allowed/disallowed tools only apply to new sessions.
+	// Resumed sessions already have these from the original session.
+	if !isResume {
 		if opts.SystemPrompt != "" {
 			args = append(args, "--system-prompt", opts.SystemPrompt)
 		}
@@ -199,6 +216,22 @@ func buildArgs(opts ProcessOptions) []string {
 				args = append(args, "--allowedTools", tool)
 			}
 		}
+
+		if len(opts.DisallowedTools) > 0 {
+			for _, tool := range opts.DisallowedTools {
+				args = append(args, "--disallowedTools", tool)
+			}
+		}
+	}
+
+	// JSON schema for validated structured output.
+	if opts.JSONSchema != "" {
+		args = append(args, "--json-schema", opts.JSONSchema)
+	}
+
+	// Explicit MCP config file path — more reliable than auto-discovery.
+	if opts.MCPConfigPath != "" {
+		args = append(args, "--mcp-config", opts.MCPConfigPath)
 	}
 
 	// In -p (print/non-interactive) mode, stdin is closed so interactive

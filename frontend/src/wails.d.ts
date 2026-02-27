@@ -1,4 +1,4 @@
-import type { Project, Agent, Team, Task, Session, DashboardStats, SessionStats, Config, DiffResult, PlanResult, PromptImproveResult, TaskStreamEvent, MCPServer, MCPCatalogResponse, MCPInstallConfig, MCPHealthResult, MCPJsonImportEntry } from './types'
+import type { Project, Agent, Team, Task, Session, DashboardStats, DashboardDetails, SessionStats, Config, DiffResult, PlanResult, PromptImproveResult, TaskStreamEvent, MCPServer, MCPCatalogResponse, MCPInstallConfig, MCPHealthResult, MCPJsonImportEntry, PaginatedResponse } from './types'
 
 declare global {
   interface Window {
@@ -9,8 +9,13 @@ declare global {
           GetConfig(): Promise<Config>
           UpdateConfig(cfg: Config): Promise<void>
 
+          // Secure Vault (API Keys)
+          GetEnvVars(): Promise<Record<string, string>>
+          UpdateEnvVars(vars: Record<string, string>): Promise<void>
+
           // Projects
           ListProjects(): Promise<Project[]>
+          ListProjectsPaginated(page: number, pageSize: number): Promise<PaginatedResponse<Project>>
           CreateProject(p: Project): Promise<Project>
           UpdateProject(p: Project): Promise<void>
           DeleteProject(id: string): Promise<void>
@@ -18,6 +23,7 @@ declare global {
 
           // Agents
           ListAgents(): Promise<Agent[]>
+          ListAgentsPaginated(page: number, pageSize: number): Promise<PaginatedResponse<Agent>>
           GetAgent(id: string): Promise<Agent>
           CreateAgent(a: Agent): Promise<Agent>
           UpdateAgent(a: Agent): Promise<void>
@@ -50,6 +56,7 @@ declare global {
 
           // Teams
           ListTeams(): Promise<Team[]>
+          ListTeamsPaginated(page: number, pageSize: number): Promise<PaginatedResponse<Team>>
           GetTeam(id: string): Promise<Team>
           CreateTeam(t: Team): Promise<Team>
           UpdateTeam(t: Team): Promise<void>
@@ -57,6 +64,7 @@ declare global {
 
           // Sessions
           ListSessions(): Promise<Session[]>
+          ListSessionsPaginated(page: number, pageSize: number): Promise<PaginatedResponse<Session>>
           GetSession(id: string): Promise<Session>
           CreateSession(s: Session): Promise<Session>
           ListSessionsByProject(projectID: string): Promise<Session[]>
@@ -92,6 +100,14 @@ declare global {
           ReadProjectFile(taskID: string, filePath: string): Promise<string>
           ListProjectFiles(taskID: string): Promise<string[]>
 
+          // Retry & Resume
+          RetryTask(taskID: string): Promise<void>
+          ResumeTask(taskID: string, prompt: string): Promise<void>
+
+          // CLAUDE.md Memory
+          GetProjectClaudeMD(projectID: string): Promise<string>
+          UpdateProjectClaudeMD(projectID: string, content: string): Promise<void>
+
           // Planner
           PlanTasks(projectID: string, goal: string): Promise<PlanResult>
 
@@ -104,6 +120,7 @@ declare global {
 
           // Stats
           GetDashboardStats(): Promise<DashboardStats>
+          GetDashboardDetails(): Promise<DashboardDetails>
           GetSessionStats(sessionID: string): Promise<SessionStats>
         }
       }

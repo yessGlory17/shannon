@@ -31,9 +31,15 @@ type TaskEngine struct {
 	testRunner *TestRunner
 
 	cancelFuncs    map[string]context.CancelFunc // sessionID -> cancel
+	sessionCtxs    map[string]context.Context    // sessionID -> context (for follow-ups)
 	teamRoundRobin map[string]int                // teamID -> last assigned index
+	taskInFlight   map[string]*sync.Mutex        // per-task mutex for follow-up serialization
 	mu             sync.Mutex
 	wailsCtx       context.Context
+
+	// taskDone is signalled whenever a task finishes execution (completed/failed).
+	// The session loop selects on this instead of polling with time.Sleep.
+	taskDone chan string // carries sessionID of the finished task's session
 }
 
 func NewTaskEngine(
@@ -60,13 +66,29 @@ func NewTaskEngine(
 		diffTracker:    diffTracker,
 		testRunner:     testRunner,
 		cancelFuncs:    make(map[string]context.CancelFunc),
+		sessionCtxs:    make(map[string]context.Context),
 		teamRoundRobin: make(map[string]int),
+		taskInFlight:   make(map[string]*sync.Mutex),
+		taskDone:       make(chan string, 64),
 	}
 }
 
 // SetWailsContext sets the Wails runtime context for event emission.
 func (te *TaskEngine) SetWailsContext(ctx context.Context) {
 	te.wailsCtx = ctx
+}
+
+// taskMutex returns a per-task mutex, creating one if it doesn't exist.
+// Used to serialize follow-up operations on the same task.
+func (te *TaskEngine) taskMutex(taskID string) *sync.Mutex {
+	te.mu.Lock()
+	defer te.mu.Unlock()
+	m, ok := te.taskInFlight[taskID]
+	if !ok {
+		m = &sync.Mutex{}
+		te.taskInFlight[taskID] = m
+	}
+	return m
 }
 
 // StartSession begins executing all tasks in a session, respecting dependencies.
@@ -90,6 +112,7 @@ func (te *TaskEngine) StartSession(sessionID string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	te.mu.Lock()
 	te.cancelFuncs[sessionID] = cancel
+	te.sessionCtxs[sessionID] = ctx
 	te.mu.Unlock()
 
 	te.emitSessionStatus(sessionID, "running")
@@ -146,6 +169,12 @@ func (te *TaskEngine) StopSession(sessionID string) error {
 		te.sessions.UpdateStatus(sessionID, models.SessionStatusFailed)
 		te.emitSessionStatus(sessionID, "cancelled")
 	}
+
+	// Clean up event buffers for all tasks in this session
+	for _, task := range tasks {
+		te.runner.CleanupTaskEvents(task.ID)
+	}
+
 	return nil
 }
 
@@ -175,6 +204,12 @@ func (te *TaskEngine) CompleteSession(sessionID string) error {
 	}
 	te.sessions.UpdateStatus(sessionID, status)
 	te.emitSessionStatus(sessionID, string(status))
+
+	// Clean up event buffers for all tasks in this session
+	for _, task := range tasks {
+		te.runner.CleanupTaskEvents(task.ID)
+	}
+
 	return nil
 }
 
@@ -194,10 +229,21 @@ func (te *TaskEngine) StopAllSessions() {
 	te.runner.StopAll()
 }
 
+// notifyTaskDone signals the session loop that a task has finished, unblocking
+// the event-driven wait without polling.
+func (te *TaskEngine) notifyTaskDone(sessionID string) {
+	select {
+	case te.taskDone <- sessionID:
+	default:
+		// Channel full — session loop will pick it up on next iteration anyway
+	}
+}
+
 func (te *TaskEngine) executeSession(ctx context.Context, sessionID string, project *models.Project) {
 	defer func() {
 		te.mu.Lock()
 		delete(te.cancelFuncs, sessionID)
+		delete(te.sessionCtxs, sessionID)
 		te.mu.Unlock()
 	}()
 
@@ -225,10 +271,29 @@ func (te *TaskEngine) executeSession(ctx context.Context, sessionID string, proj
 
 		if allDone {
 			// All tasks finished — keep session alive for follow-up interactions.
-			// The session stays "running" until the user explicitly stops or completes it.
-			// This allows sending follow-up messages to individual tasks.
-			time.Sleep(2 * time.Second)
-			continue
+			// Wait for a task-done signal (e.g. from follow-up) or context cancellation.
+			select {
+			case <-ctx.Done():
+				return
+			case sid := <-te.taskDone:
+				if sid == sessionID {
+					continue
+				}
+				// Re-queue signal for the other session
+				te.notifyTaskDone(sid)
+				// Still wait for our own signal
+				select {
+				case <-ctx.Done():
+					return
+				case <-te.taskDone:
+					continue
+				case <-time.After(2 * time.Second):
+					continue
+				}
+			case <-time.After(2 * time.Second):
+				// Fallback timeout to avoid indefinite blocking
+				continue
+			}
 		}
 
 		// Find tasks ready to run (pending with all deps completed)
@@ -243,17 +308,38 @@ func (te *TaskEngine) executeSession(ctx context.Context, sessionID string, proj
 			te.tasks.UpdateStatus(task.ID, models.TaskStatusQueued)
 			te.emitTaskStatus(task.ID, "queued")
 
+			taskCopy := task
 			go func() {
 				defer wg.Done()
-				te.executeTask(ctx, &task, project)
+				te.executeTask(ctx, &taskCopy, project)
+				// Signal session loop that a task finished
+				te.notifyTaskDone(sessionID)
 			}()
 		}
 
-		// Wait briefly before checking again
 		if len(readyTasks) == 0 {
-			time.Sleep(500 * time.Millisecond)
+			// No ready tasks but some are still pending (waiting for deps).
+			// Wait for a task-done signal instead of polling.
+			select {
+			case <-ctx.Done():
+				return
+			case <-te.taskDone:
+				continue
+			case <-time.After(2 * time.Second):
+				// Fallback to prevent indefinite blocking
+			}
 		} else {
-			wg.Wait()
+			// Wait for all launched tasks, but respect context cancellation
+			done := make(chan struct{})
+			go func() {
+				wg.Wait()
+				close(done)
+			}()
+			select {
+			case <-ctx.Done():
+				return
+			case <-done:
+			}
 		}
 	}
 }
@@ -267,6 +353,12 @@ func (te *TaskEngine) executeTask(ctx context.Context, task *models.Task, projec
 			te.failTask(task, errMsg)
 		}
 	}()
+
+	// Preserve original prompt for retry (only on first execution)
+	if task.OriginalPrompt == "" {
+		task.OriginalPrompt = task.Prompt
+		te.tasks.Update(task)
+	}
 
 	// Get agent — resolve from team if team_id is set
 	if task.AgentID == "" && task.TeamID != "" {
@@ -296,20 +388,29 @@ func (te *TaskEngine) executeTask(ctx context.Context, task *models.Task, projec
 		return
 	}
 
-	// Create workspace
-	workDir, err := te.projectMgr.CreateWorkspace(project.Path, task.SessionID, task.ID)
-	if err != nil {
-		te.failTask(task, fmt.Sprintf("workspace creation failed: %v", err))
-		return
-	}
-
-	// Update task with workspace path
+	// Agents work directly on the project directory — no workspace copy.
+	workDir := project.Path
 	task.WorkspacePath = workDir
 	te.tasks.Update(task)
 
-	// Inject .mcp.json if agent has MCP servers configured
-	if err := te.injectMCPConfig(agent, workDir); err != nil {
-		log.Printf("task %s: warning: failed to inject .mcp.json: %v", task.ID, err)
+	// Inject CLAUDE.md if project has persistent context
+	if project.ClaudeMD != "" {
+		if err := te.injectClaudeMD(workDir, project.ClaudeMD); err != nil {
+			log.Printf("task %s: warning: failed to inject CLAUDE.md: %v", task.ID, err)
+		}
+	}
+
+	// Inject .mcp.json if agent has MCP servers configured.
+	// injectMCPConfig does NOT modify agent; MCP tool patterns are merged below.
+	mcpConfigPath, mcpServerKeys, mcpErr := te.injectMCPConfig(agent, workDir)
+	if mcpErr != nil {
+		log.Printf("task %s: warning: failed to inject .mcp.json: %v", task.ID, mcpErr)
+	}
+
+	// Persist MCP config path for follow-ups
+	if mcpConfigPath != "" {
+		task.MCPConfigPath = mcpConfigPath
+		te.tasks.Update(task)
 	}
 
 	// Run project setup commands if configured
@@ -363,9 +464,23 @@ func (te *TaskEngine) executeTask(ctx context.Context, task *models.Task, projec
 	te.tasks.Update(task)
 	te.emitTaskStatus(task.ID, "running")
 
-	// Start real-time diff watcher
+	// Start real-time diff watcher (git-based, single directory)
 	diffDone := make(chan struct{})
-	go te.watchDiffs(ctx, task.ID, project.Path, workDir, diffDone)
+	go te.watchDiffs(ctx, task.ID, project.Path, diffDone)
+
+	// Build a local copy of agent to avoid mutating the original (which is shared/reusable).
+	// Merge effective permissions and MCP tool patterns into the copy.
+	agentForRun := *agent
+	agentForRun.DisallowedTools = models.StringSlice(te.buildEffectivePermissions(agent))
+
+	// Merge MCP tool patterns into AllowedTools (only if agent has a whitelist)
+	if mcpConfigPath != "" {
+		if extra := mcpToolPatterns(agent.AllowedTools, mcpServerKeys); len(extra) > 0 {
+			merged := make([]string, len(agent.AllowedTools), len(agent.AllowedTools)+len(extra))
+			copy(merged, agent.AllowedTools)
+			agentForRun.AllowedTools = append(merged, extra...)
+		}
+	}
 
 	// Run Claude
 	if task.Prompt == "" {
@@ -374,7 +489,8 @@ func (te *TaskEngine) executeTask(ctx context.Context, task *models.Task, projec
 		return
 	}
 	log.Printf("task %s: starting claude (agent=%s, model=%s, prompt_len=%d, workdir=%s)", task.ID, agent.Name, agent.Model, len(task.Prompt), workDir)
-	runResult, runErr := te.runner.RunTask(ctx, task, agent, workDir, RunTaskOptions{
+	runResult, runErr := te.runner.RunTask(ctx, task, &agentForRun, workDir, RunTaskOptions{
+		MCPConfigPath: mcpConfigPath,
 		OnSessionID: func(sessionID string) {
 			log.Printf("task %s: captured claude session_id: %s", task.ID, sessionID)
 			task.ClaudeSessionID = sessionID
@@ -387,12 +503,14 @@ func (te *TaskEngine) executeTask(ctx context.Context, task *models.Task, projec
 
 	if runErr != nil {
 		log.Printf("task %s: claude process error: %v", task.ID, runErr)
+	} else if runResult != nil {
+		log.Printf("task %s: claude process completed (events=%d, exit_code=%d, has_output=%v)", task.ID, runResult.EventCount, runResult.ExitCode, runResult.LastText != "")
 	} else {
-		log.Printf("task %s: claude process completed successfully", task.ID)
+		log.Printf("task %s: claude process completed (nil result)", task.ID)
 	}
 
-	// Compute diff
-	diffResult, _ := te.diffTracker.ComputeDiff(project.Path, workDir)
+	// Compute diff using git
+	diffResult, _ := te.diffTracker.ComputeDiff(project.Path)
 	if diffResult != nil {
 		var changedFiles []string
 		for _, f := range diffResult.Files {
@@ -435,11 +553,54 @@ func (te *TaskEngine) executeTask(ctx context.Context, task *models.Task, projec
 		}
 	}
 
+	// Re-read task from DB before final update to avoid overwriting concurrent changes
+	// (e.g. a follow-up may have updated ClaudeSessionID while we were running).
+	if freshTask, readErr := te.tasks.GetByID(task.ID); readErr == nil {
+		// Preserve fields set during this execution
+		freshTask.FilesChanged = task.FilesChanged
+		freshTask.TestPassed = task.TestPassed
+		freshTask.TestOutput = task.TestOutput
+		freshTask.BuildPassed = task.BuildPassed
+		freshTask.BuildOutput = task.BuildOutput
+		freshTask.WorkspacePath = task.WorkspacePath
+		freshTask.MCPConfigPath = task.MCPConfigPath
+		freshTask.ClaudeSessionID = task.ClaudeSessionID
+		freshTask.OriginalPrompt = task.OriginalPrompt
+		task = freshTask
+	}
+
 	// Determine final status
 	completedAt := time.Now()
 	task.CompletedAt = &completedAt
 
 	if runErr != nil {
+		// Check if we should auto-retry
+		if task.RetryCount < task.MaxRetries {
+			task.RetryCount++
+			task.Status = models.TaskStatusPending
+			task.Error = fmt.Sprintf("Retry %d/%d: %s", task.RetryCount, task.MaxRetries, runErr.Error())
+			task.ClaudeSessionID = "" // fresh session for retry
+			task.CompletedAt = nil
+			// Restore original prompt and append error context
+			if task.OriginalPrompt != "" {
+				task.Prompt = te.buildRetryPrompt(task.OriginalPrompt, runErr.Error(), task.RetryCount)
+			} else {
+				task.Prompt = te.buildRetryPrompt(task.Prompt, runErr.Error(), task.RetryCount)
+			}
+			te.tasks.Update(task)
+			te.emitTaskStatus(task.ID, "pending")
+			log.Printf("task %s: auto-retrying (%d/%d) after error: %v", task.ID, task.RetryCount, task.MaxRetries, runErr)
+
+			// Exponential backoff before re-queuing (ctx-aware)
+			backoff := time.Duration(1<<uint(task.RetryCount-1)) * time.Second
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(backoff):
+			}
+			return
+		}
+
 		task.Status = models.TaskStatusFailed
 		task.Error = runErr.Error()
 	} else if runResult != nil && runResult.NeedsInput {
@@ -449,8 +610,23 @@ func (te *TaskEngine) executeTask(ctx context.Context, task *models.Task, projec
 		task.CompletedAt = nil // not truly completed yet
 		log.Printf("task %s: agent needs user input, marking as awaiting_input", task.ID)
 	} else {
-		task.Status = models.TaskStatusCompleted
-		task.ExitCode = 0
+		// Set exit code and result text from RunResult
+		if runResult != nil {
+			task.ExitCode = runResult.ExitCode
+			if task.ResultText == "" && runResult.LastText != "" {
+				task.ResultText = runResult.LastText
+			}
+		}
+		// Determine status based on test/build results
+		if task.TestPassed != nil && !*task.TestPassed {
+			task.Status = models.TaskStatusFailed
+			task.Error = "Tests failed"
+		} else if task.BuildPassed != nil && !*task.BuildPassed {
+			task.Status = models.TaskStatusFailed
+			task.Error = "Build failed"
+		} else {
+			task.Status = models.TaskStatusCompleted
+		}
 	}
 
 	te.tasks.Update(task)
@@ -561,6 +737,11 @@ func (te *TaskEngine) selectAgentFromTeam(teamID string) (string, error) {
 	}
 }
 
+// buildRetryPrompt enhances the original prompt with error context for retry attempts.
+func (te *TaskEngine) buildRetryPrompt(originalPrompt, errorMsg string, attempt int) string {
+	return fmt.Sprintf("%s\n\n[RETRY ATTEMPT %d]\nThe previous attempt failed with error:\n%s\nPlease try a different approach to avoid this error.", originalPrompt, attempt, errorMsg)
+}
+
 func (te *TaskEngine) failTask(task *models.Task, errMsg string) {
 	log.Printf("task %s FAILED: %s", task.ID, errMsg)
 	task.Status = models.TaskStatusFailed
@@ -598,9 +779,9 @@ func (te *TaskEngine) emitSessionStatus(sessionID string, status string) {
 	}
 }
 
-// watchDiffs periodically computes diffs and emits them to the frontend while a task is running.
-func (te *TaskEngine) watchDiffs(ctx context.Context, taskID, originalPath, workspacePath string, done <-chan struct{}) {
-	ticker := time.NewTicker(2 * time.Second)
+// watchDiffs periodically computes diffs using git and emits them to the frontend while a task is running.
+func (te *TaskEngine) watchDiffs(ctx context.Context, taskID, projectPath string, done <-chan struct{}) {
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	var lastHash string
@@ -612,7 +793,7 @@ func (te *TaskEngine) watchDiffs(ctx context.Context, taskID, originalPath, work
 		case <-done:
 			return
 		case <-ticker.C:
-			diffResult, err := te.diffTracker.ComputeDiff(originalPath, workspacePath)
+			diffResult, err := te.diffTracker.ComputeDiff(projectPath)
 			if err != nil || diffResult == nil {
 				continue
 			}
@@ -635,37 +816,98 @@ func (te *TaskEngine) watchDiffs(ctx context.Context, taskID, originalPath, work
 
 // diffHash creates a simple hash string from a DiffResult for change detection.
 func (te *TaskEngine) diffHash(result *DiffResult) string {
-	var parts []string
-	for _, f := range result.Files {
-		parts = append(parts, fmt.Sprintf("%s:%s:%d", f.Path, f.Status, len(f.Diff)))
+	var sb strings.Builder
+	sb.Grow(len(result.Files) * 50)
+	for i, f := range result.Files {
+		if i > 0 {
+			sb.WriteByte('|')
+		}
+		fmt.Fprintf(&sb, "%s:%s:%d", f.Path, f.Status, len(f.Diff))
 	}
-	return strings.Join(parts, "|")
+	return sb.String()
+}
+
+// injectClaudeMD writes a .claude/CLAUDE.md file into the workspace directory.
+// Claude Code automatically reads this file for project-level context.
+func (te *TaskEngine) injectClaudeMD(workDir string, content string) error {
+	claudeDir := filepath.Join(workDir, ".claude")
+	if err := os.MkdirAll(claudeDir, 0755); err != nil {
+		return fmt.Errorf("create .claude dir: %w", err)
+	}
+	mdPath := filepath.Join(claudeDir, "CLAUDE.md")
+	if err := os.WriteFile(mdPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("write CLAUDE.md: %w", err)
+	}
+	log.Printf("task: injected CLAUDE.md (%d bytes) into %s", len(content), workDir)
+	return nil
+}
+
+// buildEffectivePermissions converts agent's protected/read-only paths into
+// Claude CLI --disallowedTools patterns.
+func (te *TaskEngine) buildEffectivePermissions(agent *models.Agent) []string {
+	var disallowed []string
+	for _, path := range agent.ProtectedPaths {
+		disallowed = append(disallowed, fmt.Sprintf("Write(%s)", path))
+		disallowed = append(disallowed, fmt.Sprintf("Edit(%s)", path))
+	}
+	for _, path := range agent.ReadOnlyPaths {
+		disallowed = append(disallowed, fmt.Sprintf("Write(%s)", path))
+		disallowed = append(disallowed, fmt.Sprintf("Edit(%s)", path))
+	}
+	disallowed = append(disallowed, agent.DisallowedTools...)
+	return disallowed
+}
+
+// mcpToolPatterns computes the MCP tool permission patterns (mcp__<serverKey>__*)
+// for the given server keys. These are needed in --allowedTools to unblock MCP usage.
+// Returns nil if the agent has no AllowedTools constraint (all tools are allowed by default).
+func mcpToolPatterns(agentAllowedTools []string, serverKeys []string) []string {
+	if len(agentAllowedTools) == 0 {
+		return nil // no whitelist → all tools allowed, no patterns needed
+	}
+	existing := make(map[string]bool, len(agentAllowedTools))
+	for _, t := range agentAllowedTools {
+		existing[t] = true
+	}
+	var patterns []string
+	for _, key := range serverKeys {
+		pattern := fmt.Sprintf("mcp__%s__*", key)
+		if !existing[pattern] {
+			patterns = append(patterns, pattern)
+		}
+	}
+	return patterns
 }
 
 // injectMCPConfig writes a .mcp.json file into the workspace directory
 // based on the agent's configured MCP server IDs. Claude Code reads this
 // file at startup to discover available MCP servers.
-// It also appends MCP tool permission patterns (mcp__<serverKey>__*) to the
-// agent's AllowedTools so the CLI doesn't block MCP tool usage.
-func (te *TaskEngine) injectMCPConfig(agent *models.Agent, workDir string) error {
+//
+// IMPORTANT: This function does NOT modify the agent object. MCP tool patterns
+// are returned separately via mcpToolPatterns and must be merged by the caller.
+//
+// Returns the path to the written .mcp.json file, and the server keys that were included.
+func (te *TaskEngine) injectMCPConfig(agent *models.Agent, workDir string) (string, []string, error) {
 	if len(agent.MCPServerIDs) == 0 {
-		return nil
+		return "", nil, nil
 	}
 
 	servers, err := te.mcpServers.ListByIDs(agent.MCPServerIDs)
 	if err != nil {
-		return fmt.Errorf("fetch MCP servers: %w", err)
+		return "", nil, fmt.Errorf("fetch MCP servers: %w", err)
 	}
 
 	if len(servers) == 0 {
-		return nil
+		log.Printf("task: agent has %d MCP server IDs but none found in DB: %v", len(agent.MCPServerIDs), agent.MCPServerIDs)
+		return "", nil, nil
 	}
 
-	// Build .mcp.json structure
+	// Build .mcp.json structure — always include args/env fields (no omitempty)
+	// to match the format Claude CLI expects.
 	type mcpServerEntry struct {
 		Command string            `json:"command"`
-		Args    []string          `json:"args,omitempty"`
-		Env     map[string]string `json:"env,omitempty"`
+		Args    []string          `json:"args"`
+		Env     map[string]string `json:"env"`
 	}
 
 	mcpConfig := struct {
@@ -674,67 +916,67 @@ func (te *TaskEngine) injectMCPConfig(agent *models.Agent, workDir string) error
 		MCPServers: make(map[string]mcpServerEntry),
 	}
 
+	var serverKeys []string
 	for _, srv := range servers {
 		if !srv.Enabled {
+			log.Printf("task: skipping disabled MCP server %q (key=%s)", srv.Name, srv.ServerKey)
 			continue
 		}
-		entry := mcpServerEntry{
+		if strings.TrimSpace(srv.Command) == "" {
+			log.Printf("task: skipping MCP server %q (key=%s): empty command", srv.Name, srv.ServerKey)
+			continue
+		}
+		args := srv.Args
+		if args == nil {
+			args = []string{}
+		}
+		env := srv.Env
+		if env == nil {
+			env = map[string]string{}
+		}
+		mcpConfig.MCPServers[srv.ServerKey] = mcpServerEntry{
 			Command: srv.Command,
+			Args:    args,
+			Env:     env,
 		}
-		if len(srv.Args) > 0 {
-			entry.Args = srv.Args
-		}
-		if len(srv.Env) > 0 {
-			entry.Env = srv.Env
-		}
-		mcpConfig.MCPServers[srv.ServerKey] = entry
+		serverKeys = append(serverKeys, srv.ServerKey)
+		log.Printf("task: adding MCP server %q (key=%s, cmd=%s, args=%v)", srv.Name, srv.ServerKey, srv.Command, srv.Args)
 	}
 
 	if len(mcpConfig.MCPServers) == 0 {
-		return nil
+		return "", nil, nil
 	}
 
 	data, err := json.MarshalIndent(mcpConfig, "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshal .mcp.json: %w", err)
+		return "", nil, fmt.Errorf("marshal .mcp.json: %w", err)
 	}
 
 	mcpPath := filepath.Join(workDir, ".mcp.json")
-	if err := os.WriteFile(mcpPath, data, 0644); err != nil {
-		return fmt.Errorf("write .mcp.json: %w", err)
+	if err := os.WriteFile(mcpPath, data, 0600); err != nil {
+		return "", nil, fmt.Errorf("write .mcp.json: %w", err)
 	}
 
-	// Add MCP tool patterns to agent's AllowedTools so --allowedTools
-	// doesn't block MCP tool usage. Pattern: mcp__<serverKey>__*
-	if len(agent.AllowedTools) > 0 {
-		for serverKey := range mcpConfig.MCPServers {
-			pattern := fmt.Sprintf("mcp__%s__*", serverKey)
-			// Check if already present
-			found := false
-			for _, t := range agent.AllowedTools {
-				if t == pattern {
-					found = true
-					break
-				}
-			}
-			if !found {
-				agent.AllowedTools = append(agent.AllowedTools, pattern)
-			}
-		}
-	}
-
-	log.Printf("task: injected .mcp.json with %d server(s) into %s", len(mcpConfig.MCPServers), workDir)
-	return nil
+	log.Printf("task: injected .mcp.json with %d server(s) into %s (path=%s)", len(mcpConfig.MCPServers), workDir, mcpPath)
+	return mcpPath, serverKeys, nil
 }
 
 // SendFollowUp sends a follow-up prompt to a completed/failed task using --resume.
+// Uses a per-task mutex to serialize concurrent follow-ups on the same task.
 func (te *TaskEngine) SendFollowUp(taskID string, message string, mode string) error {
+	// Acquire per-task mutex to prevent concurrent follow-ups on the same task.
+	// The mutex is released in the background goroutine after the final DB update.
+	taskMu := te.taskMutex(taskID)
+	taskMu.Lock()
+
 	task, err := te.tasks.GetByID(taskID)
 	if err != nil {
+		taskMu.Unlock()
 		return fmt.Errorf("task not found: %w", err)
 	}
 
 	if task.ClaudeSessionID == "" {
+		taskMu.Unlock()
 		return fmt.Errorf("task has no claude session to resume")
 	}
 
@@ -746,10 +988,11 @@ func (te *TaskEngine) SendFollowUp(taskID string, message string, mode string) e
 
 	agent, err := te.agents.GetByID(task.AgentID)
 	if err != nil {
+		taskMu.Unlock()
 		return fmt.Errorf("agent not found: %w", err)
 	}
 
-	// Apply mode overrides
+	// Apply mode overrides on a copy — never modify the original agent
 	agentCopy := *agent
 	switch mode {
 	case "plan":
@@ -758,76 +1001,132 @@ func (te *TaskEngine) SendFollowUp(taskID string, message string, mode string) e
 		agentCopy.Permissions = "bypassPermissions"
 	}
 
+	// Build effective disallowed tools for follow-up
+	agentCopy.DisallowedTools = models.StringSlice(te.buildEffectivePermissions(&agentCopy))
+
+	// Merge MCP tool patterns into AllowedTools for follow-up (same logic as executeTask).
+	// Resolve server keys from DB since we only have MCPServerIDs (DB IDs) on the agent.
+	if task.MCPConfigPath != "" && len(agent.MCPServerIDs) > 0 {
+		if srvs, srvErr := te.mcpServers.ListByIDs(agent.MCPServerIDs); srvErr == nil {
+			var keys []string
+			for _, s := range srvs {
+				if s.Enabled {
+					keys = append(keys, s.ServerKey)
+				}
+			}
+			if extra := mcpToolPatterns(agent.AllowedTools, keys); len(extra) > 0 {
+				merged := make([]string, len(agent.AllowedTools), len(agent.AllowedTools)+len(extra))
+				copy(merged, agent.AllowedTools)
+				agentCopy.AllowedTools = append(merged, extra...)
+			}
+		}
+	}
+
 	// Determine working directory
 	workDir := task.WorkspacePath
 	if workDir == "" {
-		session, err := te.sessions.GetByID(task.SessionID)
-		if err != nil {
-			return fmt.Errorf("session not found: %w", err)
+		session, sErr := te.sessions.GetByID(task.SessionID)
+		if sErr != nil {
+			taskMu.Unlock()
+			return fmt.Errorf("session not found: %w", sErr)
 		}
-		project, err := te.projects.GetByID(session.ProjectID)
-		if err != nil {
-			return fmt.Errorf("project not found: %w", err)
+		project, pErr := te.projects.GetByID(session.ProjectID)
+		if pErr != nil {
+			taskMu.Unlock()
+			return fmt.Errorf("project not found: %w", pErr)
 		}
 		workDir = project.Path
 	}
 
-	// Mark task as running
-	now := time.Now()
+	// Capture session ID before marking as running (used in goroutine)
+	claudeSessionID := task.ClaudeSessionID
+
+	// Mark task as running (preserve original StartedAt)
 	task.Status = models.TaskStatusRunning
-	task.StartedAt = &now
+	if task.StartedAt == nil {
+		now := time.Now()
+		task.StartedAt = &now
+	}
 	task.Error = ""
 	task.PendingInputData = ""
 	if err := te.tasks.Update(task); err != nil {
+		taskMu.Unlock()
 		return fmt.Errorf("failed to update task status: %w", err)
 	}
 	te.emitTaskStatus(task.ID, "running")
-	log.Printf("task %s: follow-up started (session=%s, prompt_len=%d)", task.ID, task.ClaudeSessionID, len(message))
+	log.Printf("task %s: follow-up started (session=%s, prompt_len=%d)", task.ID, claudeSessionID, len(message))
+
+	// Use session-scoped context so follow-up is cancelled when session stops.
+	// Copy context reference under lock to avoid race with session cleanup.
+	te.mu.Lock()
+	sessionCtx, hasSessionCtx := te.sessionCtxs[task.SessionID]
+	te.mu.Unlock()
+	if !hasSessionCtx {
+		sessionCtx = context.Background()
+	}
+	// Wrap in a derived context so we can detect cancellation safely
+	followUpCtx, followUpCancel := context.WithCancel(sessionCtx)
 
 	// Run follow-up in background
 	go func() {
-		runResult, runErr := te.runner.RunTask(context.Background(), task, &agentCopy, workDir, RunTaskOptions{
-			SessionID: task.ClaudeSessionID,
-			Prompt:    message,
+		defer taskMu.Unlock()
+		defer followUpCancel()
+
+		runResult, runErr := te.runner.RunTask(followUpCtx, task, &agentCopy, workDir, RunTaskOptions{
+			SessionID:     claudeSessionID,
+			Prompt:        message,
+			MCPConfigPath: task.MCPConfigPath,
 			OnSessionID: func(sessionID string) {
 				// Update session ID if it changed
-				if sessionID != task.ClaudeSessionID {
-					log.Printf("task %s: follow-up session ID changed: %s -> %s", task.ID, task.ClaudeSessionID, sessionID)
-					task.ClaudeSessionID = sessionID
-					te.tasks.Update(task)
+				if sessionID != claudeSessionID {
+					log.Printf("task %s: follow-up session ID changed: %s -> %s", taskID, claudeSessionID, sessionID)
+					claudeSessionID = sessionID
+					// Persist new session ID immediately
+					te.tasks.UpdateField(taskID, "claude_session_id", sessionID)
 				}
 			},
 		})
 
+		// Re-read task from DB to avoid overwriting concurrent changes
+		freshTask, readErr := te.tasks.GetByID(taskID)
+		if readErr != nil {
+			log.Printf("task %s: failed to re-read task after follow-up: %v", taskID, readErr)
+			return
+		}
+
 		completedAt := time.Now()
-		task.CompletedAt = &completedAt
+		freshTask.CompletedAt = &completedAt
+		freshTask.ClaudeSessionID = claudeSessionID
 
 		if runErr != nil {
-			log.Printf("task %s: follow-up failed: %v", task.ID, runErr)
-			task.Status = models.TaskStatusFailed
-			task.Error = runErr.Error()
+			log.Printf("task %s: follow-up failed: %v", taskID, runErr)
+			freshTask.Status = models.TaskStatusFailed
+			freshTask.Error = runErr.Error()
 			// Emit error as stream event so it shows in the UI
 			if te.wailsCtx != nil {
 				wailsRuntime.EventsEmit(te.wailsCtx, "task:stream", map[string]any{
-					"task_id": task.ID,
+					"task_id": taskID,
 					"type":    "error",
 					"content": fmt.Sprintf("Follow-up failed: %v", runErr),
 				})
 			}
 		} else if runResult != nil && runResult.NeedsInput {
-			task.Status = models.TaskStatusAwaitingInput
-			task.PendingInputData = runResult.LastText
-			task.CompletedAt = nil
-			log.Printf("task %s: follow-up needs user input, marking as awaiting_input", task.ID)
+			freshTask.Status = models.TaskStatusAwaitingInput
+			freshTask.PendingInputData = runResult.LastText
+			freshTask.CompletedAt = nil
+			log.Printf("task %s: follow-up needs user input, marking as awaiting_input", taskID)
 		} else {
-			log.Printf("task %s: follow-up completed successfully", task.ID)
-			task.Status = models.TaskStatusCompleted
+			log.Printf("task %s: follow-up completed successfully", taskID)
+			freshTask.Status = models.TaskStatusCompleted
+			if runResult != nil && runResult.LastText != "" {
+				freshTask.ResultText = runResult.LastText
+			}
 		}
 
-		if err := te.tasks.Update(task); err != nil {
-			log.Printf("task %s: failed to update task after follow-up: %v", task.ID, err)
+		if err := te.tasks.Update(freshTask); err != nil {
+			log.Printf("task %s: failed to update task after follow-up: %v", taskID, err)
 		}
-		te.emitTaskStatus(task.ID, string(task.Status))
+		te.emitTaskStatus(taskID, string(freshTask.Status))
 	}()
 
 	return nil

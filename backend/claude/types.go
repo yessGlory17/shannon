@@ -50,14 +50,18 @@ type ContentBlock struct {
 
 // ProcessOptions configures how to spawn a Claude Code CLI process.
 type ProcessOptions struct {
-	CLIPath      string // path to claude CLI binary, defaults to "claude"
-	WorkDir      string
-	Model        string
-	SystemPrompt string
-	AllowedTools []string
-	Permissions  string // "default", "acceptEdits", "bypassPermissions"
-	Prompt       string
-	SessionID    string // for resuming sessions
+	CLIPath         string // path to claude CLI binary, defaults to "claude"
+	WorkDir         string
+	Model           string
+	SystemPrompt    string
+	AllowedTools    []string
+	DisallowedTools []string // tools to deny (e.g., "Bash(rm *)", "Write(/etc/*)")
+	Permissions     string   // "default", "acceptEdits", "bypassPermissions"
+	Prompt          string
+	SessionID       string            // for resuming sessions
+	JSONSchema      string            // JSON schema for validated structured output (--json-schema)
+	MCPConfigPath   string            // explicit path to .mcp.json (--mcp-config)
+	Env             map[string]string // extra env vars to inject into the subprocess
 }
 
 // TaskStreamEvent is sent to the frontend via Wails events.

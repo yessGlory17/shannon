@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
-import { Plus, Trash2, FolderOpen, Pencil } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
+import { Plus, Trash2, FolderOpen, Pencil, FileText, Save, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 import { useProjectStore } from '../stores/projectStore'
+import { Pagination } from '../components/common/Pagination'
 import type { Project } from '../types'
 
 const emptyForm = { name: '', path: '', test_command: '', build_command: '', setup_commands: [] as string[] }
 
 export function ProjectSettings() {
-  const { projects, loading, fetch, create, update, remove, selectFolder } = useProjectStore()
+  const { projects, loading, pagination, fetchPaginated, create, update, remove, selectFolder } = useProjectStore()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ ...emptyForm })
 
@@ -14,9 +15,20 @@ export function ProjectSettings() {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [editForm, setEditForm] = useState({ ...emptyForm })
 
+  // CLAUDE.md state
+  const [claudeMdProject, setClaudeMdProject] = useState<string | null>(null)
+  const [claudeMdContent, setClaudeMdContent] = useState('')
+  const [claudeMdSaving, setClaudeMdSaving] = useState(false)
+  const [claudeMdSaved, setClaudeMdSaved] = useState(false)
+  const [claudeMdLoading, setClaudeMdLoading] = useState(false)
+
+  const goToPage = useCallback((p: number) => {
+    fetchPaginated(p, pagination.pageSize)
+  }, [fetchPaginated, pagination.pageSize])
+
   useEffect(() => {
-    fetch()
-  }, [fetch])
+    fetchPaginated(1)
+  }, [fetchPaginated])
 
   // ─── Create flow ──────────────────────────────────
 
@@ -81,13 +93,47 @@ export function ProjectSettings() {
     setEditForm({ ...emptyForm })
   }
 
+  // CLAUDE.md handlers
+  const toggleClaudeMd = async (projectId: string) => {
+    if (claudeMdProject === projectId) {
+      setClaudeMdProject(null)
+      setClaudeMdContent('')
+      return
+    }
+    setClaudeMdLoading(true)
+    try {
+      const content = await window.go.main.App.GetProjectClaudeMD(projectId)
+      setClaudeMdContent(content || '')
+      setClaudeMdProject(projectId)
+    } catch (e) {
+      console.error('Failed to load CLAUDE.md:', e)
+    } finally {
+      setClaudeMdLoading(false)
+    }
+  }
+
+  const saveClaudeMd = async () => {
+    if (!claudeMdProject) return
+    setClaudeMdSaving(true)
+    setClaudeMdSaved(false)
+    try {
+      await window.go.main.App.UpdateProjectClaudeMD(claudeMdProject, claudeMdContent)
+      setClaudeMdSaved(true)
+      setTimeout(() => setClaudeMdSaved(false), 2000)
+    } catch (e) {
+      console.error('Failed to save CLAUDE.md:', e)
+    } finally {
+      setClaudeMdSaving(false)
+    }
+  }
+
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold font-display text-zinc-100">Workspaces</h1>
         <button
           onClick={handleSelectFolder}
-          className="flex items-center gap-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg px-4 py-2 transition-all shadow-brand-sm hover:shadow-brand"
+          className="flex items-center gap-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg px-4 py-2 transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm hover:shadow-brand"
         >
           <Plus size={16} />
           Add Workspace
@@ -107,7 +153,7 @@ export function ProjectSettings() {
           <div className="flex gap-2 pt-4">
             <button
               onClick={handleCreate}
-              className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm hover:shadow-brand"
+              className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm hover:shadow-brand"
             >
               Create
             </button>
@@ -123,12 +169,13 @@ export function ProjectSettings() {
 
       {loading ? (
         <p className="text-sm text-zinc-500">Loading...</p>
-      ) : projects.length === 0 ? (
+      ) : projects.length === 0 && pagination.totalItems === 0 ? (
         <div className="text-center py-12 text-zinc-600">
           <FolderOpen size={40} className="mx-auto mb-3 opacity-30" />
           <p className="text-sm">No workspaces yet. Add a folder to get started.</p>
         </div>
       ) : (
+        <>
         <div className="space-y-2">
           {projects.map((p) =>
             editingProject?.id === p.id ? (
@@ -144,7 +191,7 @@ export function ProjectSettings() {
                 <div className="flex gap-2 pt-4 border-t border-white/[0.06] mt-4">
                   <button
                     onClick={handleUpdate}
-                    className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all shadow-brand-sm hover:shadow-brand"
+                    className="px-4 py-2 bg-brand-gradient hover:opacity-90 text-white text-sm font-medium rounded-lg transition-[color,background-color,border-color,box-shadow,opacity] shadow-brand-sm hover:shadow-brand"
                   >
                     Save
                   </button>
@@ -159,51 +206,105 @@ export function ProjectSettings() {
             ) : (
               <div
                 key={p.id}
-                className="rounded-xl bg-[#111114] border border-white/[0.06] shadow-card p-4 flex items-center justify-between"
+                className="rounded-xl bg-[#111114] border border-white/[0.06] shadow-card"
               >
-                <div className="min-w-0">
-                  <h3 className="text-sm font-medium text-zinc-200">{p.name}</h3>
-                  <p className="text-xs text-zinc-500 font-mono mt-0.5 truncate">{p.path}</p>
-                  {(p.test_command || p.build_command || (p.setup_commands && p.setup_commands.length > 0)) && (
-                    <div className="flex gap-3 mt-1.5 flex-wrap">
-                      {p.test_command && (
-                        <span className="text-xs text-zinc-500">
-                          test: <code className="text-zinc-400">{p.test_command}</code>
-                        </span>
+                <div className="p-4 flex items-center justify-between">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-medium text-zinc-200">{p.name}</h3>
+                    <p className="text-xs text-zinc-500 font-mono mt-0.5 truncate">{p.path}</p>
+                    {(p.test_command || p.build_command || (p.setup_commands && p.setup_commands.length > 0)) && (
+                      <div className="flex gap-3 mt-1.5 flex-wrap">
+                        {p.test_command && (
+                          <span className="text-xs text-zinc-500">
+                            test: <code className="text-zinc-400">{p.test_command}</code>
+                          </span>
+                        )}
+                        {p.build_command && (
+                          <span className="text-xs text-zinc-500">
+                            build: <code className="text-zinc-400">{p.build_command}</code>
+                          </span>
+                        )}
+                        {p.setup_commands && p.setup_commands.length > 0 && (
+                          <span className="text-xs text-zinc-500">
+                            setup: <code className="text-zinc-400">{p.setup_commands.length} command{p.setup_commands.length > 1 ? 's' : ''}</code>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => toggleClaudeMd(p.id)}
+                      className={`p-2 transition-colors ${claudeMdProject === p.id ? 'text-purple-400' : 'text-zinc-500 hover:text-purple-400'}`}
+                      title="CLAUDE.md Memory"
+                    >
+                      {claudeMdLoading && claudeMdProject === null ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <FileText size={16} />
                       )}
-                      {p.build_command && (
-                        <span className="text-xs text-zinc-500">
-                          build: <code className="text-zinc-400">{p.build_command}</code>
-                        </span>
-                      )}
-                      {p.setup_commands && p.setup_commands.length > 0 && (
-                        <span className="text-xs text-zinc-500">
-                          setup: <code className="text-zinc-400">{p.setup_commands.length} command{p.setup_commands.length > 1 ? 's' : ''}</code>
-                        </span>
-                      )}
+                    </button>
+                    <button
+                      onClick={() => startEditing(p)}
+                      className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                      title="Edit workspace"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <button
+                      onClick={() => remove(p.id)}
+                      className="p-2 text-zinc-500 hover:text-red-400 transition-colors"
+                      title="Delete workspace"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* CLAUDE.md Editor */}
+                {claudeMdProject === p.id && (
+                  <div className="px-4 pb-4 border-t border-white/[0.06]">
+                    <div className="flex items-center justify-between mt-3 mb-2">
+                      <div className="flex items-center gap-2">
+                        <FileText size={12} className="text-purple-400" />
+                        <span className="text-xs font-medium text-purple-300">CLAUDE.md</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {claudeMdSaved && (
+                          <span className="text-xs text-emerald-400">Saved</span>
+                        )}
+                        <button
+                          onClick={saveClaudeMd}
+                          disabled={claudeMdSaving}
+                          className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-medium rounded-lg disabled:opacity-50 transition-colors border border-purple-500/20"
+                        >
+                          {claudeMdSaving ? (
+                            <Loader2 size={10} className="animate-spin" />
+                          ) : (
+                            <Save size={10} />
+                          )}
+                          Save
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    onClick={() => startEditing(p)}
-                    className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors"
-                    title="Edit workspace"
-                  >
-                    <Pencil size={16} />
-                  </button>
-                  <button
-                    onClick={() => remove(p.id)}
-                    className="p-2 text-zinc-500 hover:text-red-400 transition-colors"
-                    title="Delete workspace"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+                    <p className="text-[11px] text-zinc-600 mb-2">
+                      Persistent context injected into every task workspace as .claude/CLAUDE.md. Claude CLI reads this automatically.
+                    </p>
+                    <textarea
+                      value={claudeMdContent}
+                      onChange={(e) => setClaudeMdContent(e.target.value)}
+                      placeholder="# Project Context&#10;&#10;Add persistent instructions, coding conventions, architecture notes..."
+                      rows={10}
+                      className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 input-focus resize-y transition-colors font-mono"
+                    />
+                  </div>
+                )}
               </div>
             )
           )}
         </div>
+        <Pagination page={pagination.page} totalPages={pagination.totalPages} totalItems={pagination.totalItems} onPageChange={goToPage} />
+        </>
       )}
     </div>
   )

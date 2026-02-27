@@ -48,11 +48,17 @@ export function GetAgent(arg1:string):Promise<models.Agent>;
 
 export function GetConfig():Promise<config.Config>;
 
+export function GetDashboardDetails():Promise<main.DashboardDetails>;
+
 export function GetDashboardStats():Promise<main.DashboardStats>;
+
+export function GetEnvVars():Promise<Record<string, string>>;
 
 export function GetMCPInstallConfig(arg1:string):Promise<services.InstallConfig>;
 
 export function GetMCPServer(arg1:string):Promise<models.MCPServer>;
+
+export function GetProjectClaudeMD(arg1:string):Promise<string>;
 
 export function GetSession(arg1:string):Promise<models.Session>;
 
@@ -64,6 +70,10 @@ export function GetTask(arg1:string):Promise<models.Task>;
 
 export function GetTaskDiff(arg1:string):Promise<services.DiffResult>;
 
+export function GetTaskEventCount(arg1:string):Promise<number>;
+
+export function GetTaskEventRange(arg1:string,arg2:number,arg3:number):Promise<Array<claude.TaskStreamEvent>>;
+
 export function GetTaskStreamEvents(arg1:string):Promise<Array<claude.TaskStreamEvent>>;
 
 export function GetTeam(arg1:string):Promise<models.Team>;
@@ -74,19 +84,27 @@ export function ImprovePrompt(arg1:string,arg2:string,arg3:string):Promise<servi
 
 export function ListAgents():Promise<Array<models.Agent>>;
 
+export function ListAgentsPaginated(arg1:number,arg2:number):Promise<models.PaginatedResponse>;
+
 export function ListMCPServers():Promise<Array<models.MCPServer>>;
 
 export function ListProjectFiles(arg1:string):Promise<Array<string>>;
 
 export function ListProjects():Promise<Array<models.Project>>;
 
+export function ListProjectsPaginated(arg1:number,arg2:number):Promise<models.PaginatedResponse>;
+
 export function ListSessions():Promise<Array<models.Session>>;
 
 export function ListSessionsByProject(arg1:string):Promise<Array<models.Session>>;
 
+export function ListSessionsPaginated(arg1:number,arg2:number):Promise<models.PaginatedResponse>;
+
 export function ListTasks(arg1:string):Promise<Array<models.Task>>;
 
 export function ListTeams():Promise<Array<models.Team>>;
+
+export function ListTeamsPaginated(arg1:number,arg2:number):Promise<models.PaginatedResponse>;
 
 export function ParseMCPJson(arg1:string):Promise<Array<services.MCPJsonImportEntry>>;
 
@@ -99,6 +117,10 @@ export function RejectFile(arg1:string,arg2:string,arg3:string):Promise<void>;
 export function RejectHunk(arg1:string,arg2:string,arg3:number,arg4:string):Promise<void>;
 
 export function RejectTaskChanges(arg1:string):Promise<void>;
+
+export function ResumeTask(arg1:string,arg2:string):Promise<void>;
+
+export function RetryTask(arg1:string):Promise<void>;
 
 export function SaveWorkspaceFile(arg1:string,arg2:string,arg3:string):Promise<void>;
 
@@ -124,9 +146,13 @@ export function UpdateAgent(arg1:models.Agent):Promise<void>;
 
 export function UpdateConfig(arg1:config.Config):Promise<void>;
 
+export function UpdateEnvVars(arg1:Record<string, string>):Promise<void>;
+
 export function UpdateMCPServer(arg1:models.MCPServer):Promise<void>;
 
 export function UpdateProject(arg1:models.Project):Promise<void>;
+
+export function UpdateProjectClaudeMD(arg1:string,arg2:string):Promise<void>;
 
 export function UpdateTask(arg1:models.Task):Promise<void>;
 

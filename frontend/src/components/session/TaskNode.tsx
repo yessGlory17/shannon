@@ -73,7 +73,7 @@ function TaskNodeComponent({ data }: { data: TaskNodeData }) {
     <>
       <Handle type="target" position={Position.Left} className="!bg-zinc-600 !border-zinc-500 !w-2 !h-2" />
       <div
-        className={`px-4 py-3 rounded-xl border min-w-[160px] max-w-[220px] transition-all duration-200 ${config.bg} ${config.glow} ${
+        className={`px-4 py-3 rounded-xl border min-w-[160px] max-w-[220px] transition-colors duration-200 ${config.bg} ${config.glow} ${
           data.selected ? `ring-2 ${config.ring}` : ''
         }`}
       >
