@@ -1,1258 +1,984 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Shannon — Orchestrate Claude Code Agents</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shannon - AI Agent Workflow Orchestration for Claude Code</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* ═══════════════════════ RESET & TOKENS ═══════════════════════ */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --bg: #07070a;
-  --bg2: #0c0c10;
-  --surface: #111116;
-  --surface2: #18181e;
-  --surface3: #1e1e26;
-  --border: #1f1f28;
-  --border2: #2a2a35;
-  --border3: #3a3a48;
-  --text: #eeeef0;
-  --text2: #9d9daa;
-  --text3: #6a6a78;
-  --text4: #44444f;
-  --blue: #60a5fa;
-  --purple: #a78bfa;
-  --indigo: #818cf8;
-  --emerald: #34d399;
-  --red: #f87171;
-  --amber: #fbbf24;
-  --rose: #fb7185;
-  --grad: linear-gradient(135deg, #60a5fa, #a78bfa);
-  --grad-subtle: linear-gradient(135deg, rgba(96,165,250,0.12), rgba(167,139,250,0.12));
-}
-
+/* === RESET & BASE === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
-
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Outfit', -apple-system, sans-serif;
-  line-height: 1.65;
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: #09090b;
+  color: #f4f4f5;
   overflow-x: hidden;
+  line-height: 1.6;
 }
 
-h1, h2, h3, h4 { font-family: 'Syne', sans-serif; line-height: 1.15; }
-
-/* ═══════════════════════ DOT GRID ═══════════════════════ */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: radial-gradient(circle, var(--border) 0.8px, transparent 0.8px);
-  background-size: 28px 28px;
-  opacity: 0.35;
-  pointer-events: none;
-  z-index: 0;
+/* === VARIABLES === */
+:root {
+  --bg-main: #09090b;
+  --surface-1: #111114;
+  --surface-2: #18181b;
+  --surface-3: #1f1f23;
+  --border: rgba(255,255,255,0.06);
+  --border-hover: rgba(255,255,255,0.10);
+  --text-1: #f4f4f5;
+  --text-2: #a1a1aa;
+  --text-3: #71717a;
+  --text-4: #52525b;
+  --brand-blue: #60a5fa;
+  --brand-purple: #a78bfa;
+  --emerald: #34d399;
+  --amber: #fbbf24;
+  --red: #f87171;
+  --brand-gradient: linear-gradient(135deg, #60a5fa, #a78bfa);
+  --brand-gradient-subtle: linear-gradient(135deg, rgba(96,165,250,0.12), rgba(167,139,250,0.12));
 }
 
-/* ═══════════════════════ AMBIENT ORBS ═══════════════════════ */
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  pointer-events: none;
-  z-index: 0;
+/* === TYPOGRAPHY === */
+.font-display { font-family: 'Nunito', sans-serif; }
+.font-mono { font-family: 'Fira Code', monospace; }
+
+/* === ANIMATIONS === */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(96,165,250,0.15); }
+  50% { box-shadow: 0 0 40px rgba(96,165,250,0.3), 0 0 60px rgba(167,139,250,0.15); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes typing {
+  from { width: 0; }
+  to { width: 100%; }
+}
+@keyframes blink {
+  50% { border-color: transparent; }
+}
+@keyframes slideInFromLeft {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes node-appear {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes edge-draw {
+  from { stroke-dashoffset: 200; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes log-line {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes bar-grow {
+  from { width: 0; }
 }
 
-/* ═══════════════════════ SCROLL ANIMATIONS ═══════════════════════ */
+/* === SCROLL REVEAL === */
 .reveal {
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(40px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
 }
 .reveal.visible {
   opacity: 1;
   transform: translateY(0);
 }
-.reveal-d1 { transition-delay: 0.08s; }
-.reveal-d2 { transition-delay: 0.16s; }
-.reveal-d3 { transition-delay: 0.24s; }
-.reveal-d4 { transition-delay: 0.32s; }
-.reveal-d5 { transition-delay: 0.40s; }
-
-/* ═══════════════════════ NAVIGATION ═══════════════════════ */
-nav {
-  position: fixed;
-  top: 0;
-  width: 100%;
-  z-index: 1000;
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  background: rgba(7,7,10,0.75);
-  border-bottom: 1px solid var(--border);
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-60px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
 }
+.reveal-left.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+.reveal-right {
+  opacity: 0;
+  transform: translateX(60px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.reveal-right.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+.delay-1 { transition-delay: 0.1s; }
+.delay-2 { transition-delay: 0.2s; }
+.delay-3 { transition-delay: 0.3s; }
+.delay-4 { transition-delay: 0.4s; }
+.delay-5 { transition-delay: 0.5s; }
 
-.nav-inner {
-  max-width: 1140px;
+/* === LAYOUT === */
+.container {
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 28px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  padding: 0 24px;
 }
-
-.nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--text);
-}
-
-.nav-brand svg { width: 26px; height: 26px; }
-
-.nav-brand span {
-  font-family: 'Syne', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.4px;
-}
-
-.nav-links { display: flex; gap: 24px; align-items: center; }
-
-.nav-links a {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text3);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.nav-links a:hover { color: var(--text); }
-
-.btn-gh {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text2);
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: 8px;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.btn-gh:hover { color: var(--text); background: var(--surface3); border-color: var(--border3); }
-
-/* ═══════════════════════ HERO ═══════════════════════ */
-.hero {
+section {
+  padding: 100px 0;
   position: relative;
-  padding: 140px 28px 60px;
-  text-align: center;
-  overflow: hidden;
 }
 
-.hero-logo-wrap {
-  position: relative;
-  width: 88px;
-  height: 88px;
-  margin: 0 auto 36px;
-  z-index: 1;
-}
-
-.hero-logo-wrap svg { width: 88px; height: 88px; }
-
-.hero-logo-glow {
-  position: absolute;
-  inset: -40px;
-  background: radial-gradient(circle, rgba(96,165,250,0.18) 0%, rgba(167,139,250,0.08) 50%, transparent 70%);
-  border-radius: 50%;
-  animation: pulse-glow 4s ease-in-out infinite;
-}
-
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.7; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.08); }
-}
-
-.hero h1 {
-  position: relative;
-  z-index: 1;
-  font-size: clamp(48px, 7vw, 72px);
-  font-weight: 800;
-  letter-spacing: -3px;
-  background: linear-gradient(145deg, #fff 30%, var(--text2) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 16px;
-}
-
-.hero-sub {
-  position: relative;
-  z-index: 1;
-  font-size: clamp(17px, 2.5vw, 21px);
-  font-weight: 400;
-  color: var(--text2);
-  max-width: 560px;
-  margin: 0 auto 12px;
-  line-height: 1.55;
-}
-
-.hero-note {
-  position: relative;
-  z-index: 1;
-  font-size: 13px;
-  color: var(--text4);
-  margin-bottom: 36px;
-  font-style: italic;
-}
-
-.hero-actions {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
+/* === BUTTONS === */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 11px 26px;
-  font-size: 14px;
+  padding: 14px 32px;
+  background: var(--brand-gradient);
+  color: white;
   font-weight: 600;
-  font-family: 'Outfit', sans-serif;
-  color: #fff;
-  background: var(--grad);
+  font-size: 15px;
+  border-radius: 12px;
   border: none;
-  border-radius: 10px;
-  text-decoration: none;
   cursor: pointer;
-  transition: all 0.25s;
-  box-shadow: 0 2px 16px rgba(96,165,250,0.15);
+  transition: opacity 0.2s, transform 0.2s;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(96,165,250,0.25);
 }
-
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 28px rgba(96,165,250,0.3);
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(96,165,250,0.35);
 }
-
-.btn-outline {
+.btn-secondary {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 11px 26px;
-  font-size: 14px;
+  padding: 14px 32px;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-2);
   font-weight: 500;
-  font-family: 'Outfit', sans-serif;
-  color: var(--text2);
-  background: transparent;
-  border: 1px solid var(--border2);
-  border-radius: 10px;
-  text-decoration: none;
+  font-size: 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
   transition: all 0.2s;
+  text-decoration: none;
+}
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.10);
+  color: var(--text-1);
+  border-color: var(--border-hover);
 }
 
-.btn-outline:hover { color: var(--text); border-color: var(--border3); background: var(--surface); }
-
-/* ═══════════════════════ APP MOCKUP ═══════════════════════ */
-.mockup-section {
-  position: relative;
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 20px 28px 100px;
+/* === SECTION TITLES === */
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--brand-gradient-subtle);
+  border: 1px solid rgba(96,165,250,0.15);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--text-1);
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+.section-subtitle {
+  font-size: 17px;
+  color: var(--text-3);
+  max-width: 600px;
+  line-height: 1.7;
 }
 
+/* === MOCKUP FRAME === */
 .mockup-frame {
-  position: relative;
-  z-index: 1;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.02),
-    0 20px 60px rgba(0,0,0,0.5),
-    0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 25px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
+  position: relative;
 }
-
+.mockup-frame::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
 .mockup-titlebar {
-  height: 38px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  padding: 0 14px;
   gap: 8px;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
 }
-
-.traffic-light { display: flex; gap: 6px; }
-.traffic-light span {
-  width: 11px;
-  height: 11px;
+.mockup-dot {
+  width: 12px; height: 12px;
   border-radius: 50%;
 }
-.tl-red { background: #ff5f57; }
-.tl-yellow { background: #febc2e; }
-.tl-green { background: #28c840; }
-
+.mockup-dot.red { background: #ff5f57; }
+.mockup-dot.yellow { background: #febc2e; }
+.mockup-dot.green { background: #28c840; }
 .mockup-titlebar-text {
   flex: 1;
   text-align: center;
   font-size: 12px;
+  color: var(--text-4);
   font-weight: 500;
-  color: var(--text3);
-  margin-right: 60px;
-}
-
-.mockup-body { display: flex; height: 420px; }
-
-/* Sidebar */
-.m-sidebar {
-  width: 180px;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-}
-
-.m-sidebar-brand {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.m-sidebar-brand svg { width: 28px; height: 28px; flex-shrink: 0; }
-
-.m-sidebar-brand-text h4 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-  line-height: 1;
-}
-
-.m-sidebar-brand-text span {
-  font-size: 9px;
-  color: var(--text4);
-}
-
-.m-nav { flex: 1; padding: 6px; display: flex; flex-direction: column; gap: 1px; }
-
-.m-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  color: var(--text3);
-}
-
-.m-nav-item.active {
-  background: var(--surface3);
-  color: var(--text);
-}
-
-.m-nav-item svg { width: 15px; height: 15px; opacity: 0.7; }
-.m-nav-item.active svg { opacity: 1; }
-
-.m-nav-footer {
-  padding: 8px 6px;
-  border-top: 1px solid var(--border);
-}
-
-/* Main Content */
-.m-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.m-header {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.m-header h3 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.m-badge {
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-}
-
-.m-badge-running {
-  background: rgba(96,165,250,0.12);
-  color: var(--blue);
-  animation: badge-pulse 2s ease-in-out infinite;
-}
-
-@keyframes badge-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-.m-content { flex: 1; display: flex; }
-
-/* DAG Panel */
-.m-dag {
-  flex: 1;
-  position: relative;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.dag-graph {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.dag-col {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: center;
-}
-
-.dag-node {
-  width: 140px;
-  padding: 10px 12px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: 8px;
-  border-left: 3px solid var(--text4);
-  transition: all 0.3s;
-}
-
-.dag-node-completed { border-left-color: var(--emerald); }
-.dag-node-running { border-left-color: var(--blue); box-shadow: 0 0 16px rgba(96,165,250,0.08); }
-.dag-node-pending { border-left-color: var(--text4); opacity: 0.6; }
-
-.dag-node-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 2px;
-}
-
-.dag-node-agent {
-  font-size: 9px;
-  color: var(--text3);
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.dag-node-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 4px;
-  font-size: 9px;
-  font-weight: 500;
-}
-
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-.status-dot-completed { background: var(--emerald); }
-.status-dot-running { background: var(--blue); animation: dot-blink 1.5s ease-in-out infinite; }
-.status-dot-pending { background: var(--text4); }
-
-@keyframes dot-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-
-.dag-edge {
-  width: 28px;
-  height: 2px;
-  background: var(--border2);
-  position: relative;
-  flex-shrink: 0;
-}
-
-.dag-edge::after {
-  content: '';
-  position: absolute;
-  right: -1px;
-  top: -3px;
-  border-left: 5px solid var(--border2);
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
-}
-
-.dag-edge-active {
-  background: linear-gradient(90deg, var(--blue), var(--purple));
-}
-
-.dag-edge-active::after {
-  border-left-color: var(--purple);
-}
-
-.dag-fork {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-  position: relative;
-}
-
-.dag-fork::before {
-  content: '';
-  position: absolute;
-  left: -14px;
-  top: 20px;
-  bottom: 20px;
-  width: 2px;
-  background: var(--border2);
-}
-
-/* Right Panel */
-.m-panel {
-  width: 260px;
-  border-left: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-}
-
-.m-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-}
-
-.m-tab {
-  flex: 1;
-  padding: 9px 0;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text3);
-  border-bottom: 2px solid transparent;
-}
-
-.m-tab.active {
-  color: var(--emerald);
-  border-bottom-color: var(--emerald);
-}
-
-.m-tab-content { flex: 1; overflow: hidden; }
-
-.m-log {
-  padding: 10px 14px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  line-height: 1.7;
-  color: var(--text3);
-}
-
-.m-log .log-tool { color: var(--amber); }
-.m-log .log-result { color: var(--emerald); }
-.m-log .log-text { color: var(--text2); }
-.m-log .log-dim { opacity: 0.4; }
-
-/* ═══════════════════════ SECTION UTILITY ═══════════════════════ */
-.section {
-  position: relative;
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 100px 28px;
-}
-
-.section-sm { padding: 80px 28px; }
-
-.section-label {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--blue);
-  margin-bottom: 14px;
-}
-
-.section-title {
-  font-size: clamp(28px, 4vw, 38px);
-  font-weight: 800;
-  letter-spacing: -1.5px;
-  margin-bottom: 14px;
-}
-
-.section-desc {
-  font-size: 16px;
-  color: var(--text3);
-  max-width: 520px;
-  line-height: 1.6;
-}
-
-.section-center { text-align: center; }
-.section-center .section-desc { margin: 0 auto; }
-
-.divider {
-  max-width: 1060px;
-  margin: 0 auto;
-  height: 1px;
-  background: var(--border);
-}
-
-/* ═══════════════════════ WORKFLOW ═══════════════════════ */
-.workflow-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0;
-  margin-top: 56px;
-  position: relative;
-}
-
-.workflow-step {
-  position: relative;
-  padding: 0 16px;
-  text-align: center;
-}
-
-.workflow-step::after {
-  content: '';
-  position: absolute;
-  top: 22px;
-  right: -2px;
-  width: calc(100% - 44px);
-  height: 1px;
-  background: var(--border2);
-}
-
-.workflow-step:last-child::after { display: none; }
-
-.workflow-num {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
-  font-family: 'Syne', sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--grad);
-  box-shadow: 0 4px 20px rgba(96,165,250,0.2);
-}
-
-.workflow-step h4 {
-  font-size: 14px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  letter-spacing: -0.3px;
-}
-
-.workflow-step p {
-  font-size: 12.5px;
-  color: var(--text3);
-  line-height: 1.55;
-}
-
-/* ═══════════════════════ FEATURES ═══════════════════════ */
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-top: 56px;
-}
-
-.feature-card {
-  padding: 28px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  transition: all 0.3s ease;
-}
-
-.feature-card:hover {
-  border-color: var(--border2);
-  background: var(--surface2);
-  transform: translateY(-2px);
-}
-
-.feature-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.fi-blue { background: rgba(96,165,250,0.1); color: var(--blue); }
-.fi-purple { background: rgba(167,139,250,0.1); color: var(--purple); }
-.fi-indigo { background: rgba(129,140,248,0.1); color: var(--indigo); }
-.fi-emerald { background: rgba(52,211,153,0.1); color: var(--emerald); }
-.fi-amber { background: rgba(251,191,36,0.1); color: var(--amber); }
-.fi-rose { background: rgba(251,113,133,0.1); color: var(--rose); }
-
-.feature-card h3 {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-  margin-bottom: 8px;
-}
-
-.feature-card p {
-  font-size: 13px;
-  color: var(--text3);
-  line-height: 1.65;
-}
-
-/* ═══════════════════════ DIFF REVIEW MOCKUP ═══════════════════════ */
-.review-section {
-  position: relative;
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 100px 28px;
-}
-
-.review-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 48px;
-  align-items: center;
-  margin-top: 48px;
-}
-
-.review-info h3 {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.8px;
-  margin-bottom: 16px;
-}
-
-.review-info p {
-  font-size: 14px;
-  color: var(--text3);
-  line-height: 1.7;
-  margin-bottom: 20px;
-}
-
-.review-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.review-list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 13px;
-  color: var(--text2);
-  line-height: 1.5;
-}
-
-.review-list li svg {
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-
-.diff-frame {
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-}
-
-.diff-header {
-  padding: 10px 14px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.diff-filename {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text2);
-}
-
-.diff-badge {
-  font-size: 9px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: rgba(96,165,250,0.1);
-  color: var(--blue);
-}
-
-.diff-body {
-  padding: 0;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  line-height: 1.8;
-}
-
-.diff-hunk {
-  padding: 4px 14px;
-  color: var(--text4);
-  background: var(--surface);
-  font-size: 10px;
-}
-
-.diff-line {
-  padding: 1px 14px 1px 38px;
-  position: relative;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.diff-line-num {
-  position: absolute;
-  left: 10px;
-  width: 20px;
-  text-align: right;
-  color: var(--text4);
-  font-size: 10px;
-  user-select: none;
-}
-
-.diff-del {
-  background: rgba(248,113,113,0.06);
-  color: var(--red);
-}
-
-.diff-add {
-  background: rgba(52,211,153,0.06);
-  color: var(--emerald);
-}
-
-.diff-ctx { color: var(--text3); }
-
-.diff-actions {
-  padding: 10px 14px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 8px;
-}
-
-.diff-btn {
-  padding: 5px 12px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 600;
-  border: 1px solid var(--border2);
-  background: var(--surface2);
-  color: var(--text2);
-  font-family: 'Outfit', sans-serif;
-}
-
-.diff-btn-accept {
-  background: rgba(52,211,153,0.1);
-  border-color: rgba(52,211,153,0.2);
-  color: var(--emerald);
-}
-
-.diff-btn-reject {
-  background: rgba(248,113,113,0.08);
-  border-color: rgba(248,113,113,0.15);
-  color: var(--red);
-}
-
-/* ═══════════════════════ STRATEGIES ═══════════════════════ */
-.strat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-top: 48px;
-}
-
-.strat-card {
-  padding: 28px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  text-align: center;
-  transition: all 0.3s;
-}
-
-.strat-card:hover {
-  border-color: var(--border2);
-  transform: translateY(-2px);
-}
-
-.strat-viz {
-  height: 72px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 18px;
-}
-
-.strat-node {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: var(--grad);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: white;
-  font-family: 'Syne', sans-serif;
-  flex-shrink: 0;
-}
-
-.strat-edge {
-  width: 24px;
-  height: 2px;
-  background: var(--border3);
-  flex-shrink: 0;
-}
-
-.strat-card h3 {
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.strat-card p {
-  font-size: 12.5px;
-  color: var(--text3);
-  line-height: 1.55;
-}
-
-/* ═══════════════════════ TECH STACK ═══════════════════════ */
-.stack-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 40px;
-}
-
-.stack-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text2);
-  transition: border-color 0.2s;
-}
-
-.stack-pill:hover { border-color: var(--border2); }
-
-.stack-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-/* ═══════════════════════ CTA ═══════════════════════ */
-.cta-section {
-  position: relative;
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 100px 28px;
-  text-align: center;
-}
-
-.cta-code {
-  display: inline-block;
-  margin-top: 28px;
-  padding: 16px 28px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  color: var(--text2);
-  text-align: left;
-  line-height: 2;
-}
-
-.cta-code .dim { color: var(--text4); }
-.cta-code .hl { color: var(--blue); }
-.cta-code .acc { color: var(--purple); }
-
-/* ═══════════════════════ FOOTER ═══════════════════════ */
-footer {
-  border-top: 1px solid var(--border);
-  padding: 28px;
-  text-align: center;
-}
-
-footer p {
-  font-size: 12px;
-  color: var(--text4);
-  line-height: 1.7;
-}
-
-footer a { color: var(--text3); text-decoration: none; }
-footer a:hover { color: var(--text2); }
-
-/* ═══════════════════════ RESPONSIVE ═══════════════════════ */
-@media (max-width: 900px) {
-  .workflow-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  .workflow-step::after { display: none; }
-  .features-grid { grid-template-columns: 1fr; }
-  .strat-grid { grid-template-columns: 1fr; }
-  .review-layout { grid-template-columns: 1fr; }
-  .mockup-body { height: auto; flex-direction: column; }
-  .m-sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; }
-  .m-nav { flex-direction: row; overflow-x: auto; }
-  .m-panel { width: 100%; }
-  .m-dag { min-height: 240px; }
-  .dag-graph { transform: scale(0.8); }
-}
-
-@media (max-width: 640px) {
-  .nav-links a:not(.btn-gh) { display: none; }
-  .m-sidebar { display: none; }
-  .m-panel { display: none; }
-  .mockup-body { height: 280px; }
 }
 </style>
 </head>
 <body>
+<!-- ========== HERO SECTION ========== -->
+<section id="hero" style="padding: 60px 0 120px; position: relative; overflow: hidden;">
+  <!-- Background effects -->
+  <div style="position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 800px; height: 800px; background: radial-gradient(circle, rgba(96,165,250,0.06) 0%, rgba(167,139,250,0.03) 40%, transparent 70%); pointer-events: none;"></div>
+  <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect fill=%22none%22 width=%2260%22 height=%2260%22/><rect fill=%22rgba(255,255,255,0.015)%22 x=%2229%22 y=%2229%22 width=%222%22 height=%222%22/></svg>'); pointer-events: none;"></div>
 
-<!-- ═══════ NAV ═══════ -->
-<nav>
-  <div class="nav-inner">
-    <a href="#" class="nav-brand">
-      <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs><linearGradient id="n1" x1="56" y1="456" x2="456" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
-        <rect x="72" y="72" width="368" height="368" rx="60" fill="url(#n1)" opacity="0.12"/>
-        <rect x="72" y="72" width="368" height="368" rx="60" stroke="url(#n1)" stroke-width="6" fill="none" opacity="0.35"/>
-        <g transform="translate(256,256)"><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#n1)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#n1)" transform="rotate(60)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#n1)" transform="rotate(120)"/></g>
-        <line x1="256" y1="186" x2="256" y2="100" stroke="url(#n1)" stroke-width="8" stroke-linecap="round" opacity="0.6"/><rect x="244" y="86" width="24" height="24" rx="5" fill="url(#n1)" opacity="0.6"/>
-        <line x1="326" y1="256" x2="412" y2="256" stroke="url(#n1)" stroke-width="8" stroke-linecap="round" opacity="0.6"/><rect x="400" y="244" width="24" height="24" rx="5" fill="url(#n1)" opacity="0.6"/>
-      </svg>
-      <span>Shannon</span>
-    </a>
-    <div class="nav-links">
-      <a href="#workflow">How it works</a>
-      <a href="#features">Features</a>
-      <a href="#review">Review</a>
-      <a href="#stack">Stack</a>
-      <a href="https://github.com" class="btn-gh">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-        GitHub
+  <div class="container" style="text-align: center; position: relative; z-index: 1;">
+    <!-- Logo -->
+    <div style="animation: fadeInUp 0.8s ease both;">
+      <div style="display: inline-block; margin-bottom: 32px; animation: float 6s ease-in-out infinite;">
+        <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" width="88" height="88" style="filter: drop-shadow(0 0 30px rgba(96,165,250,0.3));">
+          <defs><linearGradient id="g" x1="56" y1="456" x2="456" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+          <rect x="72" y="72" width="368" height="368" rx="60" fill="url(#g)" opacity="0.12"/>
+          <rect x="72" y="72" width="368" height="368" rx="60" stroke="url(#g)" stroke-width="6" fill="none" opacity="0.35"/>
+          <g transform="translate(256, 256)"><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g)" transform="rotate(60)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g)" transform="rotate(120)"/></g>
+          <circle cx="256" cy="256" r="72" fill="url(#g)" opacity="0.06"/>
+          <line x1="256" y1="186" x2="256" y2="72" stroke="url(#g)" stroke-width="10" stroke-linecap="round" opacity="0.75"/><rect x="242" y="60" width="28" height="28" rx="6" fill="url(#g)" opacity="0.75"/>
+          <line x1="326" y1="256" x2="440" y2="256" stroke="url(#g)" stroke-width="10" stroke-linecap="round" opacity="0.75"/><rect x="426" y="242" width="28" height="28" rx="6" fill="url(#g)" opacity="0.75"/>
+          <line x1="256" y1="326" x2="256" y2="440" stroke="url(#g)" stroke-width="10" stroke-linecap="round" opacity="0.75"/><rect x="242" y="426" width="28" height="28" rx="6" fill="url(#g)" opacity="0.75"/>
+          <line x1="186" y1="256" x2="72" y2="256" stroke="url(#g)" stroke-width="10" stroke-linecap="round" opacity="0.75"/><rect x="58" y="242" width="28" height="28" rx="6" fill="url(#g)" opacity="0.75"/>
+          <path d="M 292 218 L 292 148 L 392 148" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/><rect x="382" y="138" width="22" height="22" rx="5" fill="url(#g)" opacity="0.55"/>
+          <path d="M 218 218 L 148 218 L 148 130" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/><rect x="137" y="116" width="22" height="22" rx="5" fill="url(#g)" opacity="0.55"/>
+          <path d="M 292 294 L 364 294 L 364 382" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/><rect x="353" y="374" width="22" height="22" rx="5" fill="url(#g)" opacity="0.55"/>
+          <path d="M 218 294 L 218 364 L 130 364" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/><rect x="116" y="353" width="22" height="22" rx="5" fill="url(#g)" opacity="0.55"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <div style="animation: fadeInUp 0.8s ease 0.2s both;">
+      <h1 class="font-display" style="font-size: 64px; font-weight: 900; line-height: 1.05; margin-bottom: 8px;">
+        <span style="background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Shannon</span>
+      </h1>
+      <p style="font-size: 16px; color: var(--text-4); font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 24px;">for Claude Code</p>
+    </div>
+
+    <!-- Subtitle -->
+    <div style="animation: fadeInUp 0.8s ease 0.4s both;">
+      <h2 class="font-display" style="font-size: 28px; font-weight: 700; color: var(--text-1); margin-bottom: 16px; max-width: 700px; margin-left: auto; margin-right: auto;">
+        AI Agent Workflow Orchestration Platform
+      </h2>
+      <p style="font-size: 17px; color: var(--text-3); max-width: 560px; margin: 0 auto 40px; line-height: 1.7;">
+        Create agents, organize them into teams, plan tasks with AI, and monitor execution in real-time. All powered by Claude Code.
+      </p>
+    </div>
+
+    <!-- CTA Buttons -->
+    <div style="animation: fadeInUp 0.8s ease 0.6s both; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+      <a href="#features" class="btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Explore Features
+      </a>
+      <a href="#workspace" class="btn-secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+        View on GitHub
       </a>
     </div>
+
+    <!-- Stats bar -->
+    <div style="animation: fadeInUp 0.8s ease 0.8s both; margin-top: 60px; display: flex; justify-content: center; gap: 48px; flex-wrap: wrap;">
+      <div style="text-align: center;">
+        <div class="font-display" style="font-size: 32px; font-weight: 800; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">6+</div>
+        <div style="font-size: 13px; color: var(--text-4); margin-top: 2px;">Core Pages</div>
+      </div>
+      <div style="text-align: center;">
+        <div class="font-display" style="font-size: 32px; font-weight: 800; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">DAG</div>
+        <div style="font-size: 13px; color: var(--text-4); margin-top: 2px;">Visual Editor</div>
+      </div>
+      <div style="text-align: center;">
+        <div class="font-display" style="font-size: 32px; font-weight: 800; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">RT</div>
+        <div style="font-size: 13px; color: var(--text-4); margin-top: 2px;">Real-Time Logs</div>
+      </div>
+      <div style="text-align: center;">
+        <div class="font-display" style="font-size: 32px; font-weight: 800; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI</div>
+        <div style="font-size: 13px; color: var(--text-4); margin-top: 2px;">Task Planner</div>
+      </div>
+    </div>
   </div>
-</nav>
+</section><!-- ========== DASHBOARD SCREENSHOT ========== -->
+<section id="features" style="padding: 80px 0 100px;">
+  <div class="container">
+    <div class="reveal" style="text-align: center; margin-bottom: 60px;">
+      <div class="section-badge">Dashboard</div>
+      <h2 class="section-title">Command Center Overview</h2>
+      <p class="section-subtitle" style="margin: 0 auto;">Real-time metrics, agent performance, task analytics, and activity feeds - all at a glance.</p>
+    </div>
 
-<!-- ═══════ HERO ═══════ -->
-<section class="hero">
-  <div class="orb" style="width:600px;height:600px;background:radial-gradient(circle,rgba(96,165,250,0.1),transparent 70%);top:-100px;left:50%;transform:translateX(-50%);"></div>
-  <div class="orb" style="width:400px;height:400px;background:radial-gradient(circle,rgba(167,139,250,0.06),transparent 70%);top:100px;right:-100px;"></div>
+    <!-- Dashboard Mockup -->
+    <div class="reveal delay-2 mockup-frame" style="animation: pulse-glow 4s ease-in-out infinite;">
+      <div class="mockup-titlebar">
+        <div class="mockup-dot red"></div>
+        <div class="mockup-dot yellow"></div>
+        <div class="mockup-dot green"></div>
+        <span class="mockup-titlebar-text">Shannon - Dashboard</span>
+      </div>
+      <div style="display: flex; min-height: 520px;">
+        <!-- Sidebar -->
+        <div style="width: 200px; background: var(--surface-1); border-right: 1px solid var(--border); padding: 0; flex-shrink: 0;">
+          <!-- Logo -->
+          <div style="padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;">
+            <svg viewBox="0 0 512 512" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="g2" x1="56" y1="456" x2="456" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+              <rect x="72" y="72" width="368" height="368" rx="60" fill="url(#g2)" opacity="0.12"/><rect x="72" y="72" width="368" height="368" rx="60" stroke="url(#g2)" stroke-width="6" fill="none" opacity="0.35"/>
+              <g transform="translate(256, 256)"><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g2)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g2)" transform="rotate(60)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g2)" transform="rotate(120)"/></g>
+            </svg>
+            <div>
+              <div class="font-display" style="font-size: 13px; font-weight: 700; color: var(--text-1);">Shannon</div>
+              <div style="font-size: 9px; color: var(--text-4);">for Claude Code</div>
+            </div>
+          </div>
+          <!-- Nav Items -->
+          <div style="padding: 12px 8px;">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; background: var(--brand-gradient-subtle); margin-bottom: 2px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              <span style="font-size: 12px; color: var(--text-1); font-weight: 500;">Dashboard</span>
+              <div style="margin-left: auto; width: 3px; height: 14px; border-radius: 4px; background: var(--brand-gradient);"></div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; margin-bottom: 2px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#52525b" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <span style="font-size: 12px; color: var(--text-4);">Workspaces</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; margin-bottom: 2px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#52525b" stroke-width="1.5"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="m2 14 6-6 6 6"/></svg>
+              <span style="font-size: 12px; color: var(--text-4);">Agents</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; margin-bottom: 2px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#52525b" stroke-width="1.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+              <span style="font-size: 12px; color: var(--text-4);">MCP Servers</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; margin-bottom: 2px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#52525b" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span style="font-size: 12px; color: var(--text-4);">Teams</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#52525b" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span style="font-size: 12px; color: var(--text-4);">Sessions</span>
+            </div>
+          </div>
+        </div>
 
-  <div class="hero-logo-wrap reveal">
-    <div class="hero-logo-glow"></div>
-    <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="h1" x1="56" y1="456" x2="456" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
-      <rect x="72" y="72" width="368" height="368" rx="60" fill="url(#h1)" opacity="0.12"/>
-      <rect x="72" y="72" width="368" height="368" rx="60" stroke="url(#h1)" stroke-width="6" fill="none" opacity="0.35"/>
-      <g transform="translate(256,256)"><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#h1)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#h1)" transform="rotate(60)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#h1)" transform="rotate(120)"/></g>
-      <circle cx="256" cy="256" r="72" fill="url(#h1)" opacity="0.06"/>
-      <line x1="256" y1="186" x2="256" y2="72" stroke="url(#h1)" stroke-width="10" stroke-linecap="round" opacity="0.75"/><rect x="242" y="60" width="28" height="28" rx="6" fill="url(#h1)" opacity="0.75"/>
-      <line x1="326" y1="256" x2="440" y2="256" stroke="url(#h1)" stroke-width="10" stroke-linecap="round" opacity="0.75"/><rect x="426" y="242" width="28" height="28" rx="6" fill="url(#h1)" opacity="0.75"/>
-      <line x1="256" y1="326" x2="256" y2="440" stroke="url(#h1)" stroke-width="10" stroke-linecap="round" opacity="0.75"/><rect x="242" y="426" width="28" height="28" rx="6" fill="url(#h1)" opacity="0.75"/>
-      <line x1="186" y1="256" x2="72" y2="256" stroke="url(#h1)" stroke-width="10" stroke-linecap="round" opacity="0.75"/><rect x="58" y="242" width="28" height="28" rx="6" fill="url(#h1)" opacity="0.75"/>
-      <path d="M 292 218 L 292 148 L 392 148" stroke="url(#h1)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/><rect x="382" y="138" width="22" height="22" rx="5" fill="url(#h1)" opacity="0.55"/>
-      <path d="M 218 218 L 148 218 L 148 130" stroke="url(#h1)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/><rect x="137" y="116" width="22" height="22" rx="5" fill="url(#h1)" opacity="0.55"/>
-      <path d="M 292 294 L 364 294 L 364 382" stroke="url(#h1)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/><rect x="353" y="374" width="22" height="22" rx="5" fill="url(#h1)" opacity="0.55"/>
-      <path d="M 218 294 L 218 364 L 130 364" stroke="url(#h1)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/><rect x="116" y="353" width="22" height="22" rx="5" fill="url(#h1)" opacity="0.55"/>
-    </svg>
-  </div>
+        <!-- Main Content -->
+        <div style="flex: 1; padding: 20px; overflow: hidden;">
+          <!-- Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <span class="font-display" style="font-size: 20px; font-weight: 700; color: var(--text-1);">Dashboard</span>
+            <span style="font-size: 11px; color: var(--text-4); display: flex; align-items: center; gap: 4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Auto-refreshes every 5m
+            </span>
+          </div>
 
-  <h1 class="reveal reveal-d1">Shannon</h1>
-  <p class="hero-sub reveal reveal-d2">
-    A desktop app that orchestrates multiple Claude Code agents working together on your projects.
-  </p>
-  <p class="hero-note reveal reveal-d3">
-    Named after Claude Shannon, the father of information theory.
-  </p>
+          <!-- Stat Cards -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+            <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px;">
+              <div style="font-size: 10px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Projects</div>
+              <div class="font-display" style="font-size: 28px; font-weight: 800; color: var(--text-1);">3</div>
+            </div>
+            <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px;">
+              <div style="font-size: 10px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Agents</div>
+              <div class="font-display" style="font-size: 28px; font-weight: 800; color: var(--text-1);">8</div>
+            </div>
+            <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px;">
+              <div style="font-size: 10px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Teams</div>
+              <div class="font-display" style="font-size: 28px; font-weight: 800; color: var(--text-1);">4</div>
+            </div>
+            <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px;">
+              <div style="font-size: 10px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Sessions</div>
+              <div class="font-display" style="font-size: 28px; font-weight: 800; color: var(--text-1);">12</div>
+            </div>
+          </div>
 
-  <div class="hero-actions reveal reveal-d4">
-    <a href="#workflow" class="btn-primary">
-      See how it works
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
-    </a>
-    <a href="https://github.com" class="btn-outline">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-      View source
-    </a>
+          <!-- Running Tasks Banner -->
+          <div style="background: linear-gradient(135deg, rgba(96,165,250,0.08), rgba(167,139,250,0.08)); border: 1px solid rgba(96,165,250,0.15); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            <span style="font-size: 13px; font-weight: 600; color: var(--brand-blue);">3 tasks running</span>
+          </div>
+
+          <!-- Charts Row -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+            <!-- Pie chart mockup 1 -->
+            <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px;">
+              <div style="font-size: 10px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Task Status</div>
+              <svg viewBox="0 0 100 100" width="80" height="80" style="display: block; margin: 0 auto;">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#22c55e" stroke-width="12" stroke-dasharray="175 251" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#60a5fa" stroke-width="12" stroke-dasharray="75 251" stroke-dashoffset="-175" transform="rotate(-90 50 50)"/>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#fbbf24" stroke-width="12" stroke-dasharray="40 251" stroke-dashoffset="-250" transform="rotate(-90 50 50)"/>
+              </svg>
+              <div style="display: flex; justify-content: center; gap: 12px; margin-top: 10px;">
+                <span style="font-size: 9px; color: #22c55e;">Done 70%</span>
+                <span style="font-size: 9px; color: #60a5fa;">Active 30%</span>
+              </div>
+            </div>
+            <!-- Pie chart mockup 2 -->
+            <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px;">
+              <div style="font-size: 10px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Sessions</div>
+              <svg viewBox="0 0 100 100" width="80" height="80" style="display: block; margin: 0 auto;">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#34d399" stroke-width="12" stroke-dasharray="125 251" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#a78bfa" stroke-width="12" stroke-dasharray="80 251" stroke-dashoffset="-125" transform="rotate(-90 50 50)"/>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#71717a" stroke-width="12" stroke-dasharray="46 251" stroke-dashoffset="-205" transform="rotate(-90 50 50)"/>
+              </svg>
+              <div style="display: flex; justify-content: center; gap: 12px; margin-top: 10px;">
+                <span style="font-size: 9px; color: #34d399;">Done 50%</span>
+                <span style="font-size: 9px; color: #a78bfa;">Active 32%</span>
+              </div>
+            </div>
+            <!-- Gauge -->
+            <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Success Rate</div>
+              <svg viewBox="0 0 100 60" width="90" height="54" style="display: block; margin: 0 auto;">
+                <path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="var(--surface-3)" stroke-width="8" stroke-linecap="round"/>
+                <path d="M 10 55 A 40 40 0 0 1 82 30" fill="none" stroke="url(#g)" stroke-width="8" stroke-linecap="round"/>
+                <text x="50" y="50" text-anchor="middle" fill="var(--text-1)" font-size="16" font-weight="700" font-family="Nunito">87%</text>
+              </svg>
+            </div>
+            <!-- Code Review -->
+            <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px;">
+              <div style="font-size: 10px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Code Review</div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; color: var(--text-3);">Tests Passed</span>
+                  <span style="font-size: 11px; font-weight: 600; color: #34d399;">24/28</span>
+                </div>
+                <div style="height: 4px; background: var(--surface-3); border-radius: 4px; overflow: hidden;">
+                  <div style="height: 100%; width: 85%; background: linear-gradient(90deg, #34d399, #22c55e); border-radius: 4px; animation: bar-grow 1.5s ease both;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; color: var(--text-3);">Files Changed</span>
+                  <span style="font-size: 11px; font-weight: 600; color: var(--amber);">47</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Completion Trend -->
+          <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px;">
+            <div style="font-size: 10px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Completion Trend</div>
+            <svg viewBox="0 0 400 80" width="100%" height="80">
+              <polyline points="0,70 40,62 80,55 120,48 160,52 200,40 240,35 280,28 320,22 360,18 400,10" fill="none" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="0,70 40,62 80,55 120,48 160,52 200,40 240,35 280,28 320,22 360,18 400,10 400,80 0,80" fill="url(#g)" opacity="0.06"/>
+              <circle cx="400" cy="10" r="4" fill="#60a5fa"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
-
-<!-- ═══════ APP MOCKUP ═══════ -->
-<div class="mockup-section">
-  <div class="mockup-frame reveal">
-    <div class="mockup-titlebar">
-      <div class="traffic-light">
-        <span class="tl-red"></span>
-        <span class="tl-yellow"></span>
-        <span class="tl-green"></span>
+<!-- ========== TEAM EDITOR - VISUAL DAG ========== -->
+<section id="teams" style="padding: 80px 0 100px; background: linear-gradient(180deg, var(--bg-main) 0%, rgba(17,17,20,0.5) 50%, var(--bg-main) 100%);">
+  <div class="container">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;">
+      <!-- Left: Text -->
+      <div class="reveal-left">
+        <div class="section-badge">Visual Team Builder</div>
+        <h2 class="section-title">Design Agent<br>Workflows Visually</h2>
+        <p class="section-subtitle" style="margin-bottom: 32px;">
+          Drag and drop agents onto the canvas, connect them to define execution flow. Choose from parallel, sequential, or fully custom strategies.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(96,165,250,0.1); display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--text-1);">Drag & Drop Canvas</div>
+              <div style="font-size: 12px; color: var(--text-3);">Powered by ReactFlow for smooth interactions</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(251,191,36,0.1); display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="M4 12h16"/><path d="M4 6h16"/><path d="M4 18h16"/></svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--text-1);">3 Strategy Presets</div>
+              <div style="font-size: 12px; color: var(--text-3);">Parallel, Sequential, or Custom pipelines</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(167,139,250,0.1); display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--text-1);">Multi-Model Teams</div>
+              <div style="font-size: 12px; color: var(--text-3);">Combine Opus, Sonnet, and Haiku agents</div>
+            </div>
+          </div>
+        </div>
       </div>
-      <span class="mockup-titlebar-text">Shannon</span>
+
+      <!-- Right: Team Editor Mockup -->
+      <div class="reveal-right delay-2">
+        <div class="mockup-frame" style="transform: perspective(1000px) rotateY(-3deg); transition: transform 0.5s ease;">
+          <div class="mockup-titlebar">
+            <div class="mockup-dot red"></div><div class="mockup-dot yellow"></div><div class="mockup-dot green"></div>
+            <span class="mockup-titlebar-text">Team Editor - Backend Squad</span>
+          </div>
+          <div style="display: flex; min-height: 380px;">
+            <!-- Agent Sidebar -->
+            <div style="width: 160px; background: var(--surface-1); border-right: 1px solid var(--border);">
+              <div style="padding: 12px; border-bottom: 1px solid var(--border);">
+                <div style="font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">Agents</div>
+                <div style="font-size: 9px; color: var(--text-4); margin-top: 2px;">Drag onto canvas</div>
+              </div>
+              <div style="padding: 8px;">
+                <!-- Agent items -->
+                <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.03); margin-bottom: 4px; cursor: default;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3f3f46" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg>
+                  <div>
+                    <div style="font-size: 11px; color: var(--text-4);">Code Writer</div>
+                    <div style="font-size: 9px; color: var(--text-4);">opus</div>
+                  </div>
+                  <span style="font-size: 8px; color: var(--text-4); margin-left: auto;">added</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.03); margin-bottom: 4px;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3f3f46" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg>
+                  <div>
+                    <div style="font-size: 11px; color: var(--text-4);">Reviewer</div>
+                    <div style="font-size: 9px; color: var(--text-4);">sonnet</div>
+                  </div>
+                  <span style="font-size: 8px; color: var(--text-4); margin-left: auto;">added</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.06); margin-bottom: 4px; cursor: grab;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg>
+                  <div>
+                    <div style="font-size: 11px; color: var(--text-2);">Tester</div>
+                    <div style="font-size: 9px; color: var(--text-4);">haiku</div>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.06); cursor: grab;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg>
+                  <div>
+                    <div style="font-size: 11px; color: var(--text-2);">DevOps</div>
+                    <div style="font-size: 9px; color: var(--text-4);">sonnet</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Canvas -->
+            <div style="flex: 1; background: var(--surface-1); position: relative; background-image: radial-gradient(circle, #1f1f23 1px, transparent 1px); background-size: 20px 20px;">
+              <!-- Agent Nodes on Canvas -->
+              <svg width="100%" height="100%" style="position: absolute; top: 0; left: 0;">
+                <!-- Edges -->
+                <line x1="180" y1="120" x2="320" y2="200" stroke="#3f3f46" stroke-width="1.5" style="stroke-dasharray: 200; animation: edge-draw 1.5s ease 0.8s both;"/>
+                <line x1="180" y1="120" x2="320" y2="80" stroke="#3f3f46" stroke-width="1.5" style="stroke-dasharray: 200; animation: edge-draw 1.5s ease 1s both;"/>
+              </svg>
+
+              <!-- Node 1: Code Writer -->
+              <div style="position: absolute; left: 60px; top: 90px; animation: node-appear 0.5s ease 0.3s both;">
+                <div style="background: var(--surface-2); border: 1px solid var(--border-hover); border-radius: 12px; padding: 12px 16px; min-width: 130px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg>
+                    <span style="font-size: 12px; font-weight: 600; color: var(--text-1);">Code Writer</span>
+                  </div>
+                  <div style="display: inline-block; padding: 2px 8px; background: var(--brand-gradient); border-radius: 6px; font-size: 9px; color: white; font-weight: 600;">opus</div>
+                </div>
+              </div>
+
+              <!-- Node 2: Reviewer -->
+              <div style="position: absolute; left: 260px; top: 50px; animation: node-appear 0.5s ease 0.6s both;">
+                <div style="background: var(--surface-2); border: 1px solid var(--border-hover); border-radius: 12px; padding: 12px 16px; min-width: 120px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg>
+                    <span style="font-size: 12px; font-weight: 600; color: var(--text-1);">Reviewer</span>
+                  </div>
+                  <div style="display: inline-block; padding: 2px 8px; background: linear-gradient(135deg, #a78bfa, #8b5cf6); border-radius: 6px; font-size: 9px; color: white; font-weight: 600;">sonnet</div>
+                </div>
+              </div>
+
+              <!-- Node 3: Tester -->
+              <div style="position: absolute; left: 260px; top: 170px; animation: node-appear 0.5s ease 0.9s both;">
+                <div style="background: var(--surface-2); border: 1px solid var(--border-hover); border-radius: 12px; padding: 12px 16px; min-width: 120px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg>
+                    <span style="font-size: 12px; font-weight: 600; color: var(--text-1);">Tester</span>
+                  </div>
+                  <div style="display: inline-block; padding: 2px 8px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 6px; font-size: 9px; color: #111; font-weight: 600;">haiku</div>
+                </div>
+              </div>
+
+              <!-- Strategy badge -->
+              <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 6px;">
+                <div style="padding: 4px 10px; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); border-radius: 6px; font-size: 10px; color: #fbbf24; font-weight: 600;">Sequential</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="mockup-body">
-      <!-- Sidebar -->
-      <div class="m-sidebar">
-        <div class="m-sidebar-brand">
-          <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs><linearGradient id="ms" x1="56" y1="456" x2="456" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
-            <rect x="72" y="72" width="368" height="368" rx="60" fill="url(#ms)" opacity="0.12"/>
-            <rect x="72" y="72" width="368" height="368" rx="60" stroke="url(#ms)" stroke-width="6" fill="none" opacity="0.35"/>
-            <g transform="translate(256,256)"><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#ms)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#ms)" transform="rotate(60)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#ms)" transform="rotate(120)"/></g>
-            <line x1="256" y1="186" x2="256" y2="100" stroke="url(#ms)" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
-            <line x1="326" y1="256" x2="412" y2="256" stroke="url(#ms)" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+  </div>
+</section>
+<!-- ========== AI TASK PLANNER ========== -->
+<section id="planner" style="padding: 80px 0 100px;">
+  <div class="container">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;">
+      <!-- Left: Planner Mockup -->
+      <div class="reveal-left delay-1">
+        <div class="mockup-frame">
+          <div class="mockup-titlebar">
+            <div class="mockup-dot red"></div><div class="mockup-dot yellow"></div><div class="mockup-dot green"></div>
+            <span class="mockup-titlebar-text">Session Planner - Auth Feature</span>
+          </div>
+          <div style="padding: 20px; background: var(--surface-1);">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <div>
+                <div class="font-display" style="font-size: 18px; font-weight: 700; color: var(--text-1);">JWT Authentication</div>
+                <div style="font-size: 11px; color: var(--text-4);">api-project &middot; 5 tasks</div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.2); border-radius: 8px; font-size: 12px; color: #c084fc;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg>
+                  AI Planner
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: var(--brand-gradient); border-radius: 8px; font-size: 12px; color: white; font-weight: 600;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Start Working
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Planner Dialog -->
+            <div style="background: var(--surface-1); border: 1px solid rgba(168,85,247,0.2); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/></svg>
+                <span style="font-size: 12px; font-weight: 600; color: #c084fc;">AI Task Planner</span>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                <div style="font-size: 12px; color: var(--text-2); line-height: 1.5;">The workspace has been analyzed. Here are the proposed tasks for JWT authentication implementation:</div>
+              </div>
+            </div>
+
+            <!-- Task List -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; animation: log-line 0.3s ease 0.2s both;">
+                <span style="font-size: 11px; color: var(--text-4); font-family: 'Fira Code', monospace; width: 20px;">1.</span>
+                <div style="flex: 1;">
+                  <div style="font-size: 12px; font-weight: 600; color: var(--text-1);">Setup JWT middleware</div>
+                  <div style="font-size: 10px; color: var(--text-4); display: flex; gap: 10px; margin-top: 2px;">
+                    <span style="display: flex; align-items: center; gap: 3px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg> Code Writer</span>
+                  </div>
+                </div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; animation: log-line 0.3s ease 0.4s both;">
+                <span style="font-size: 11px; color: var(--text-4); font-family: 'Fira Code', monospace; width: 20px;">2.</span>
+                <div style="flex: 1;">
+                  <div style="font-size: 12px; font-weight: 600; color: var(--text-1);">Implement login endpoint</div>
+                  <div style="font-size: 10px; color: var(--text-4); display: flex; gap: 10px; margin-top: 2px;">
+                    <span style="display: flex; align-items: center; gap: 3px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg> Code Writer</span>
+                    <span>deps: Setup JWT middleware</span>
+                  </div>
+                </div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; animation: log-line 0.3s ease 0.6s both;">
+                <span style="font-size: 11px; color: var(--text-4); font-family: 'Fira Code', monospace; width: 20px;">3.</span>
+                <div style="flex: 1;">
+                  <div style="font-size: 12px; font-weight: 600; color: var(--text-1);">Add registration endpoint</div>
+                  <div style="font-size: 10px; color: var(--text-4); display: flex; gap: 10px; margin-top: 2px;">
+                    <span style="display: flex; align-items: center; gap: 3px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg> Code Writer</span>
+                    <span>deps: Setup JWT middleware</span>
+                  </div>
+                </div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; animation: log-line 0.3s ease 0.8s both;">
+                <span style="font-size: 11px; color: var(--text-4); font-family: 'Fira Code', monospace; width: 20px;">4.</span>
+                <div style="flex: 1;">
+                  <div style="font-size: 12px; font-weight: 600; color: var(--text-1);">Protect routes with auth middleware</div>
+                  <div style="font-size: 10px; color: var(--text-4); display: flex; gap: 10px; margin-top: 2px;">
+                    <span style="display: flex; align-items: center; gap: 3px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Backend Team</span>
+                    <span>deps: Login, Registration</span>
+                  </div>
+                </div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; animation: log-line 0.3s ease 1s both;">
+                <span style="font-size: 11px; color: var(--text-4); font-family: 'Fira Code', monospace; width: 20px;">5.</span>
+                <div style="flex: 1;">
+                  <div style="font-size: 12px; font-weight: 600; color: var(--text-1);">Write unit tests for auth</div>
+                  <div style="font-size: 10px; color: var(--text-4); display: flex; gap: 10px; margin-top: 2px;">
+                    <span style="display: flex; align-items: center; gap: 3px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg> Tester</span>
+                    <span>deps: All above</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div style="display: flex; gap: 8px; margin-top: 14px;">
+              <div style="padding: 8px 16px; background: var(--brand-gradient); border-radius: 8px; font-size: 12px; color: white; font-weight: 600;">Accept & Create Tasks</div>
+              <div style="padding: 8px 16px; background: rgba(255,255,255,0.06); border-radius: 8px; font-size: 12px; color: var(--text-2);">Re-plan</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Text -->
+      <div class="reveal-right delay-2">
+        <div class="section-badge">AI Planner</div>
+        <h2 class="section-title">Let AI Plan<br>Your Tasks</h2>
+        <p class="section-subtitle" style="margin-bottom: 32px;">
+          Describe your goal in natural language. The AI analyzes your workspace structure and proposes an optimal task breakdown with dependencies.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(192,132,252,0.1); display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/></svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--text-1);">Workspace-Aware</div>
+              <div style="font-size: 12px; color: var(--text-3);">Analyzes your codebase before planning</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(52,211,153,0.1); display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--text-1);">Auto-Dependencies</div>
+              <div style="font-size: 12px; color: var(--text-3);">Automatically resolves task ordering</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(96,165,250,0.1); display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--text-1);">Smart Assignment</div>
+              <div style="font-size: 12px; color: var(--text-3);">Maps tasks to agents or teams</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ========== SESSION WORKSPACE ========== -->
+<section id="workspace" style="padding: 80px 0 100px; background: linear-gradient(180deg, var(--bg-main) 0%, rgba(17,17,20,0.5) 50%, var(--bg-main) 100%);">
+  <div class="container">
+    <div class="reveal" style="text-align: center; margin-bottom: 60px;">
+      <div class="section-badge">Workspace</div>
+      <h2 class="section-title">DAG View + Live Chat</h2>
+      <p class="section-subtitle" style="margin: 0 auto;">Watch your task dependency graph execute in real-time. Chat with agents, review code changes, and manage workflow - all in one split view.</p>
+    </div>
+
+    <!-- Workspace Mockup -->
+    <div class="reveal delay-2 mockup-frame">
+      <div class="mockup-titlebar">
+        <div class="mockup-dot red"></div><div class="mockup-dot yellow"></div><div class="mockup-dot green"></div>
+        <span class="mockup-titlebar-text">Workspace - API Migration</span>
+      </div>
+      <div style="display: flex; min-height: 440px;">
+        <!-- DAG View (Left) -->
+        <div style="flex: 1; background: var(--surface-1); position: relative; background-image: radial-gradient(circle, #1f1f23 1px, transparent 1px); background-size: 20px 20px; border-right: 1px solid var(--border);">
+          <!-- Header bar -->
+          <div style="padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(17,17,20,0.8); backdrop-filter: blur(8px);">
+            <div>
+              <span class="font-display" style="font-size: 14px; font-weight: 700; color: var(--text-1);">API Migration</span>
+              <span style="font-size: 11px; color: var(--text-4); margin-left: 8px;">3/5 tasks</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 11px; color: #60a5fa;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                Running
+              </span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <div style="padding: 5px 12px; background: rgba(239,68,68,0.15); border-radius: 6px; font-size: 11px; color: #f87171; display: flex; align-items: center; gap: 4px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                Stop
+              </div>
+            </div>
+          </div>
+
+          <!-- DAG Nodes -->
+          <svg width="100%" height="360" style="position: relative;">
+            <!-- Edges -->
+            <line x1="130" y1="75" x2="250" y2="135" stroke="#3f3f46" stroke-width="1.5" style="stroke-dasharray: 200; animation: edge-draw 1s ease 0.5s both;"/>
+            <line x1="130" y1="75" x2="250" y2="215" stroke="#3f3f46" stroke-width="1.5" style="stroke-dasharray: 200; animation: edge-draw 1s ease 0.7s both;"/>
+            <line x1="350" y1="135" x2="450" y2="175" stroke="#3f3f46" stroke-width="1.5" style="stroke-dasharray: 200; animation: edge-draw 1s ease 0.9s both;"/>
+            <line x1="350" y1="215" x2="450" y2="175" stroke="#3f3f46" stroke-width="1.5" style="stroke-dasharray: 200; animation: edge-draw 1s ease 1.1s both;"/>
+            <line x1="540" y1="175" x2="620" y2="175" stroke="#3f3f46" stroke-width="1.5" style="stroke-dasharray: 200; animation: edge-draw 1s ease 1.3s both;"/>
           </svg>
-          <div class="m-sidebar-brand-text">
-            <h4>Shannon</h4>
-            <span>for Claude Code</span>
-          </div>
-        </div>
-        <div class="m-nav">
-          <div class="m-nav-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            Dashboard
-          </div>
-          <div class="m-nav-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-            Projects
-          </div>
-          <div class="m-nav-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8V4H8"/><rect x="8" y="2" width="8" height="4" rx="1"/><rect x="4" y="8" width="16" height="14" rx="2"/><path d="M9 15h6"/></svg>
-            Agents
-          </div>
-          <div class="m-nav-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/></svg>
-            MCP Servers
-          </div>
-          <div class="m-nav-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Teams
-          </div>
-          <div class="m-nav-item active">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Sessions
-          </div>
-        </div>
-        <div class="m-nav-footer">
-          <div class="m-nav-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            Settings
-          </div>
-        </div>
-      </div>
 
-      <!-- Main -->
-      <div class="m-main">
-        <div class="m-header">
-          <h3>Session: Implement Authentication</h3>
-          <span class="m-badge m-badge-running">Running</span>
-        </div>
-        <div class="m-content">
-          <!-- DAG -->
-          <div class="m-dag">
-            <div class="dag-graph">
-              <div class="dag-col">
-                <div class="dag-node dag-node-completed">
-                  <div class="dag-node-title">Plan Tasks</div>
-                  <div class="dag-node-agent">planner</div>
-                  <div class="dag-node-status"><span class="status-dot status-dot-completed"></span> <span style="color:var(--emerald)">Completed</span></div>
-                </div>
+          <!-- Task Nodes overlaid -->
+          <!-- Node 1: DB Schema - Completed -->
+          <div style="position: absolute; left: 40px; top: 95px; animation: node-appear 0.4s ease 0.2s both;">
+            <div style="background: var(--surface-2); border: 1px solid rgba(52,211,153,0.3); border-radius: 10px; padding: 10px 14px; min-width: 120px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-1);">DB Schema</span>
               </div>
-              <div class="dag-edge dag-edge-active"></div>
-              <div class="dag-col dag-fork">
-                <div class="dag-node dag-node-running">
-                  <div class="dag-node-title">Build Login UI</div>
-                  <div class="dag-node-agent">frontend-dev</div>
-                  <div class="dag-node-status"><span class="status-dot status-dot-running"></span> <span style="color:var(--blue)">Running</span></div>
-                </div>
-                <div class="dag-node dag-node-running">
-                  <div class="dag-node-title">Auth API Routes</div>
-                  <div class="dag-node-agent">backend-dev</div>
-                  <div class="dag-node-status"><span class="status-dot status-dot-running"></span> <span style="color:var(--blue)">Running</span></div>
-                </div>
-              </div>
-              <div class="dag-edge"></div>
-              <div class="dag-col">
-                <div class="dag-node dag-node-pending">
-                  <div class="dag-node-title">Write Tests</div>
-                  <div class="dag-node-agent">test-writer</div>
-                  <div class="dag-node-status"><span class="status-dot status-dot-pending"></span> <span style="color:var(--text4)">Queued</span></div>
-                </div>
-              </div>
+              <div style="font-size: 9px; color: #34d399; margin-top: 3px;">Completed</div>
             </div>
           </div>
 
-          <!-- Right Panel -->
-          <div class="m-panel">
-            <div class="m-tabs">
-              <div class="m-tab active">Chat</div>
-              <div class="m-tab">Changes</div>
+          <!-- Node 2: API Routes - Completed -->
+          <div style="position: absolute; left: 200px; top: 145px; animation: node-appear 0.4s ease 0.5s both;">
+            <div style="background: var(--surface-2); border: 1px solid rgba(52,211,153,0.3); border-radius: 10px; padding: 10px 14px; min-width: 120px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-1);">API Routes</span>
+              </div>
+              <div style="font-size: 9px; color: #34d399; margin-top: 3px;">Completed</div>
             </div>
-            <div class="m-tab-content">
-              <div class="m-log">
-                <div class="log-dim">// frontend-dev output</div>
-                <div><span class="log-tool">tool_use:</span> <span class="log-text">Read src/App.tsx</span></div>
-                <div><span class="log-result">result:</span> <span class="log-text">File read successfully</span></div>
-                <div><span class="log-tool">tool_use:</span> <span class="log-text">Write src/auth/LoginForm.tsx</span></div>
-                <div><span class="log-text">Creating login form component with email and password fields...</span></div>
-                <div><span class="log-result">result:</span> <span class="log-text">File created</span></div>
-                <div><span class="log-tool">tool_use:</span> <span class="log-text">Write src/auth/AuthContext.tsx</span></div>
-                <div><span class="log-text">Setting up authentication context provider...</span></div>
-                <div><span class="log-result">result:</span> <span class="log-text">File created</span></div>
-                <div><span class="log-tool">tool_use:</span> <span class="log-text">Edit src/App.tsx</span></div>
-                <div><span class="log-text">Adding auth routes and protected route wrapper...</span></div>
+          </div>
+
+          <!-- Node 3: Auth Layer - Running -->
+          <div style="position: absolute; left: 200px; top: 225px; animation: node-appear 0.4s ease 0.8s both;">
+            <div style="background: var(--surface-2); border: 1px solid rgba(96,165,250,0.3); border-radius: 10px; padding: 10px 14px; min-width: 120px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); animation: pulse-glow 3s ease infinite;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-1);">Auth Layer</span>
+              </div>
+              <div style="font-size: 9px; color: #60a5fa; margin-top: 3px;">Running...</div>
+            </div>
+          </div>
+
+          <!-- Node 4: Integration - Pending -->
+          <div style="position: absolute; left: 390px; top: 185px; animation: node-appear 0.4s ease 1.1s both;">
+            <div style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; min-width: 120px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); opacity: 0.6;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-3);">Integration</span>
+              </div>
+              <div style="font-size: 9px; color: var(--text-4); margin-top: 3px;">Pending</div>
+            </div>
+          </div>
+
+          <!-- Node 5: Tests - Pending -->
+          <div style="position: absolute; left: 560px; top: 185px; animation: node-appear 0.4s ease 1.4s both;">
+            <div style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; min-width: 100px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); opacity: 0.6;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-3);">Tests</span>
+              </div>
+              <div style="font-size: 9px; color: var(--text-4); margin-top: 3px;">Pending</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Panel (Right) -->
+        <div style="width: 320px; display: flex; flex-direction: column; background: var(--surface-1);">
+          <!-- Tabs -->
+          <div style="display: flex; border-bottom: 1px solid var(--border);">
+            <div style="padding: 10px 16px; font-size: 11px; font-weight: 600; color: var(--text-1); position: relative; display: flex; align-items: center; gap: 5px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Chat
+              <div style="position: absolute; bottom: 0; left: 8px; right: 8px; height: 2px; background: var(--brand-gradient); border-radius: 2px 2px 0 0;"></div>
+            </div>
+            <div style="padding: 10px 16px; font-size: 11px; font-weight: 500; color: var(--text-4); display: flex; align-items: center; gap: 5px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></svg>
+              Changes
+              <span style="padding: 1px 6px; background: rgba(251,191,36,0.15); color: #fbbf24; border-radius: 10px; font-size: 9px;">3</span>
+            </div>
+          </div>
+
+          <!-- Chat messages -->
+          <div style="flex: 1; padding: 12px; overflow: auto;">
+            <!-- Task info -->
+            <div style="text-align: center; margin-bottom: 12px;">
+              <div style="font-size: 10px; color: var(--text-4); padding: 4px 12px; background: rgba(255,255,255,0.03); display: inline-block; border-radius: 6px;">Auth Layer &middot; Code Writer (opus)</div>
+            </div>
+
+            <!-- Agent message -->
+            <div style="margin-bottom: 10px;">
+              <div style="font-size: 10px; color: var(--brand-blue); margin-bottom: 3px; font-weight: 500;">Code Writer</div>
+              <div style="background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 12px; font-size: 11px; color: var(--text-2); line-height: 1.6;">
+                I'll implement the JWT authentication layer. First, let me set up the middleware...
+              </div>
+            </div>
+
+            <!-- Tool use indicator -->
+            <div style="margin-bottom: 10px; padding: 8px 12px; background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.1); border-radius: 8px;">
+              <div style="font-size: 10px; color: #fbbf24; display: flex; align-items: center; gap: 5px;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                Writing file: auth/middleware.go
+              </div>
+            </div>
+
+            <!-- Agent message 2 -->
+            <div style="margin-bottom: 10px;">
+              <div style="font-size: 10px; color: var(--brand-blue); margin-bottom: 3px; font-weight: 500;">Code Writer</div>
+              <div style="background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 12px; font-size: 11px; color: var(--text-2); line-height: 1.6;">
+                Created the JWT middleware with token validation, claims extraction, and refresh token support. Now setting up the auth handler...
+              </div>
+            </div>
+
+            <!-- Another tool use -->
+            <div style="margin-bottom: 10px; padding: 8px 12px; background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.1); border-radius: 8px;">
+              <div style="font-size: 10px; color: #fbbf24; display: flex; align-items: center; gap: 5px;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                Writing file: auth/handler.go
+              </div>
+            </div>
+
+            <!-- Typing indicator -->
+            <div style="display: flex; align-items: center; gap: 6px; padding: 4px 0;">
+              <div style="display: flex; gap: 3px;">
+                <div style="width: 5px; height: 5px; background: var(--brand-blue); border-radius: 50%; animation: float 1s ease-in-out infinite;"></div>
+                <div style="width: 5px; height: 5px; background: var(--brand-blue); border-radius: 50%; animation: float 1s ease-in-out 0.2s infinite;"></div>
+                <div style="width: 5px; height: 5px; background: var(--brand-blue); border-radius: 50%; animation: float 1s ease-in-out 0.4s infinite;"></div>
+              </div>
+              <span style="font-size: 10px; color: var(--text-4);">Agent is working...</span>
+            </div>
+          </div>
+
+          <!-- Chat input -->
+          <div style="padding: 10px; border-top: 1px solid var(--border);">
+            <div style="display: flex; gap: 8px;">
+              <div style="flex: 1; padding: 8px 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; font-size: 11px; color: var(--text-4);">Send a message to the agent...</div>
+              <div style="width: 32px; height: 32px; background: var(--brand-gradient); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </div>
             </div>
           </div>
@@ -1260,288 +986,441 @@ footer a:hover { color: var(--text2); }
       </div>
     </div>
   </div>
-
-  <!-- Mockup shadow/glow -->
-  <div class="orb" style="width:500px;height:300px;background:radial-gradient(ellipse,rgba(96,165,250,0.06),transparent 70%);bottom:-80px;left:50%;transform:translateX(-50%);"></div>
-</div>
-
-<div class="divider"></div>
-
-<!-- ═══════ WORKFLOW ═══════ -->
-<section class="section section-center" id="workflow">
-  <span class="section-label reveal">How it works</span>
-  <h2 class="section-title reveal reveal-d1">From idea to reviewed code in five steps</h2>
-  <p class="section-desc reveal reveal-d2">
-    Shannon sits between you and your Claude Code CLI. You define the agents, Shannon handles the rest.
-  </p>
-
-  <div class="workflow-grid">
-    <div class="workflow-step reveal">
-      <div class="workflow-num">1</div>
-      <h4>Define Agents</h4>
-      <p>Create agents with custom system prompts, model preferences (Opus, Sonnet, Haiku), and specific tool permissions. Each agent becomes a focused specialist.</p>
-    </div>
-    <div class="workflow-step reveal reveal-d1">
-      <div class="workflow-num">2</div>
-      <h4>Build Teams</h4>
-      <p>Group agents into teams. Choose parallel, sequential, or custom execution. Use the visual canvas to draw complex dependency graphs.</p>
-    </div>
-    <div class="workflow-step reveal reveal-d2">
-      <div class="workflow-num">3</div>
-      <h4>Plan Tasks</h4>
-      <p>Describe your goal in natural language. Shannon's AI planner breaks it into concrete tasks, maps dependencies, and assigns agents. Or write tasks manually.</p>
-    </div>
-    <div class="workflow-step reveal reveal-d3">
-      <div class="workflow-num">4</div>
-      <h4>Execute</h4>
-      <p>Each task runs Claude Code CLI in its own isolated workspace copy of your project. Watch progress in real-time through the DAG visualization.</p>
-    </div>
-    <div class="workflow-step reveal reveal-d4">
-      <div class="workflow-num">5</div>
-      <h4>Review &amp; Apply</h4>
-      <p>Review every diff hunk by hunk. Accept, reject with feedback, or edit directly in Monaco. Nothing touches your project until you approve.</p>
-    </div>
-  </div>
 </section>
-
-<div class="divider"></div>
-
-<!-- ═══════ FEATURES ═══════ -->
-<section class="section section-center" id="features">
-  <span class="section-label reveal">Features</span>
-  <h2 class="section-title reveal reveal-d1">Everything you need to orchestrate</h2>
-  <p class="section-desc reveal reveal-d2">A complete toolkit for managing Claude Code agents working in parallel on your codebase.</p>
-
-  <div class="features-grid">
-    <div class="feature-card reveal">
-      <div class="feature-icon fi-blue">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8V4H8"/><rect x="8" y="2" width="8" height="4" rx="1"/><rect x="4" y="8" width="16" height="14" rx="2"/><path d="M9 15h6"/></svg>
-      </div>
-      <h3>Custom Agents</h3>
-      <p>Give each agent a specialized system prompt and choose their Claude model &mdash; Opus for complex reasoning, Sonnet for balanced speed, Haiku for simple tasks. Control exactly which tools they can access. A frontend agent, backend agent, test writer &mdash; each fine-tuned for their role.</p>
-    </div>
-
-    <div class="feature-card reveal reveal-d1">
-      <div class="feature-icon fi-purple">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      </div>
-      <h3>Team Orchestration</h3>
-      <p>Organize agents into teams with three execution strategies: parallel (all at once), sequential (chained one after another), or custom where you draw the dependency graph on a visual drag-and-drop canvas powered by React Flow.</p>
-    </div>
-
-    <div class="feature-card reveal reveal-d2">
-      <div class="feature-icon fi-indigo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-      </div>
-      <h3>AI Planning</h3>
-      <p>Describe what you want to accomplish in natural language. Shannon uses Claude to decompose your goal into concrete, assignable tasks with proper dependencies. Includes a prompt improver that helps refine agent system prompts for better results.</p>
-    </div>
-
-    <div class="feature-card reveal reveal-d3">
-      <div class="feature-icon fi-emerald">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
-      </div>
-      <h3>Diff Review</h3>
-      <p>The safety net. Accept or reject individual code hunks, approve or reject entire files, reject with written feedback that goes back to Claude for iteration, or modify workspace files directly in the built-in Monaco editor. Full control over every change.</p>
-    </div>
-
-    <div class="feature-card reveal reveal-d4">
-      <div class="feature-icon fi-amber">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-      </div>
-      <h3>Live Monitoring</h3>
-      <p>Watch your session unfold in real-time through a directed acyclic graph that visualizes every task's status, dependencies, and progress. Stream Claude's output live as each agent works. Know exactly what's happening at every moment.</p>
-    </div>
-
-    <div class="feature-card reveal reveal-d5">
-      <div class="feature-icon fi-rose">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/></svg>
-      </div>
-      <h3>MCP Integration</h3>
-      <p>Browse and install MCP servers from the Smithery registry, or configure your own. Attach servers to specific agents to extend their capabilities &mdash; web browsing, database access, API integrations, whatever your workflow needs.</p>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- ═══════ DIFF REVIEW ═══════ -->
-<section class="review-section" id="review">
-  <span class="section-label reveal">Code review</span>
-  <h2 class="section-title reveal reveal-d1">Every change under your control</h2>
-
-  <div class="review-layout">
-    <div class="review-info reveal reveal-d2">
-      <h3>Nothing touches your project until you say so.</h3>
-      <p>Shannon creates an isolated workspace copy for each task. When an agent finishes, you review every change through a detailed diff interface before anything gets applied to your real codebase.</p>
-      <ul class="review-list">
-        <li>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span><strong>Hunk-level review</strong> &mdash; accept or reject individual code chunks within a file</span>
-        </li>
-        <li>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span><strong>File-level control</strong> &mdash; approve or reject entire files at once</span>
-        </li>
-        <li>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span><strong>Feedback loop</strong> &mdash; reject with a reason, Shannon sends your notes back to Claude for iteration</span>
-        </li>
-        <li>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span><strong>Inline editing</strong> &mdash; modify workspace files directly in the built-in Monaco editor</span>
-        </li>
-      </ul>
-    </div>
-
-    <div class="diff-frame reveal reveal-d3">
-      <div class="diff-header">
-        <span class="diff-filename">src/auth/LoginForm.tsx</span>
-        <span class="diff-badge">modified</span>
-      </div>
-      <div class="diff-body">
-        <div class="diff-hunk">@@ -8,4 +8,16 @@</div>
-        <div class="diff-line diff-ctx"><span class="diff-line-num">8</span> export function LoginForm() {</div>
-        <div class="diff-line diff-del"><span class="diff-line-num">9</span>-  return &lt;div&gt;TODO&lt;/div&gt;</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">9</span>+  const [email, setEmail] = useState('')</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">10</span>+  const [password, setPassword] = useState('')</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">11</span>+</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">12</span>+  return (</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">13</span>+    &lt;form className="space-y-4"&gt;</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">14</span>+      &lt;input value={email}</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">15</span>+        onChange={e =&gt; setEmail(...)}</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">16</span>+        placeholder="Email" /&gt;</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">17</span>+      &lt;input type="password"</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">18</span>+        value={password} /&gt;</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">19</span>+      &lt;button&gt;Sign in&lt;/button&gt;</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">20</span>+    &lt;/form&gt;</div>
-        <div class="diff-line diff-add"><span class="diff-line-num">21</span>+  )</div>
-        <div class="diff-line diff-ctx"><span class="diff-line-num">22</span> }</div>
-      </div>
-      <div class="diff-actions">
-        <div class="diff-btn diff-btn-accept">Accept Hunk</div>
-        <div class="diff-btn diff-btn-reject">Reject + Feedback</div>
-        <div class="diff-btn">Edit in Monaco</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- ═══════ STRATEGIES ═══════ -->
-<section class="section section-center" id="strategies">
-  <span class="section-label reveal">Execution strategies</span>
-  <h2 class="section-title reveal reveal-d1">Three ways to run your agents</h2>
-  <p class="section-desc reveal reveal-d2">Choose how agents within a team coordinate their work.</p>
-
-  <div class="strat-grid">
-    <div class="strat-card reveal">
-      <div class="strat-viz">
-        <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
-          <div style="display:flex;gap:8px;">
-            <div class="strat-node">A</div>
-            <div class="strat-node">B</div>
-            <div class="strat-node">C</div>
+<!-- ========== PROMPT EDITOR ========== -->
+<section id="monitor" style="padding: 80px 0 100px;">
+  <div class="container">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;">
+      <!-- Left: Text -->
+      <div class="reveal-left">
+        <div class="section-badge">Prompt Editor</div>
+        <h2 class="section-title">Monaco-Powered<br>Prompt Engineering</h2>
+        <p class="section-subtitle" style="margin-bottom: 32px;">
+          A purpose-built code editor for crafting Claude system prompts. Semantic syntax highlighting, intelligent autocomplete, and one-click AI improvement.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(34,211,238,0.1); display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--text-1);">Semantic Tag Coloring</div>
+              <div style="font-size: 12px; color: var(--text-3);">6 tag categories: Role, Structure, Context, Tool, Thinking, Artifact</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(251,191,36,0.1); display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--text-1);">Smart Autocomplete</div>
+              <div style="font-size: 12px; color: var(--text-3);">XML tag snippets, {{variables}}, and auto-closing tags</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(167,139,250,0.1); display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--text-1);">AI Improve</div>
+              <div style="font-size: 12px; color: var(--text-3);">One-click prompt enhancement via Claude with revert/keep</div>
+            </div>
           </div>
         </div>
       </div>
-      <h3>Parallel</h3>
-      <p>All agents run simultaneously. Maximum throughput for independent tasks that don't depend on each other.</p>
-    </div>
 
-    <div class="strat-card reveal reveal-d1">
-      <div class="strat-viz">
-        <div class="strat-node">A</div>
-        <div class="strat-edge"></div>
-        <div class="strat-node">B</div>
-        <div class="strat-edge"></div>
-        <div class="strat-node">C</div>
-      </div>
-      <h3>Sequential</h3>
-      <p>Agents chain one after another. Each agent waits for the previous to complete and can build on their work.</p>
-    </div>
-
-    <div class="strat-card reveal reveal-d2">
-      <div class="strat-viz">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div class="strat-node" style="width:30px;height:30px;font-size:11px;">A</div>
-          <div style="display:flex;gap:14px;">
-            <div class="strat-node" style="width:30px;height:30px;font-size:11px;">B</div>
-            <div class="strat-node" style="width:30px;height:30px;font-size:11px;">C</div>
+      <!-- Right: Prompt Editor Mockup -->
+      <div class="reveal-right delay-2">
+        <div class="mockup-frame" style="transform: perspective(1000px) rotateY(3deg);">
+          <div class="mockup-titlebar">
+            <div class="mockup-dot red"></div><div class="mockup-dot yellow"></div><div class="mockup-dot green"></div>
+            <span class="mockup-titlebar-text">Agent Editor - System Prompt</span>
           </div>
-          <div class="strat-node" style="width:30px;height:30px;font-size:11px;">D</div>
+          <div style="display: flex; flex-direction: column; background: var(--surface-1);">
+            <!-- Editor Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border);">
+              <span style="font-size: 11px; color: var(--text-4);">System Prompt</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 10px; color: var(--text-4);">Supports XML tags, Markdown, and {{variables}}</span>
+                <div style="display: flex; align-items: center; gap: 5px; padding: 4px 10px; background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.3); border-radius: 6px; font-size: 10px; color: #c4b5fd; cursor: pointer;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/></svg>
+                  AI Improve
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Improve Explanation Banner -->
+            <div style="margin: 8px 10px 0; display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); border-radius: 8px; animation: fadeIn 0.5s ease both;">
+              <p style="flex: 1; font-size: 10px; color: rgba(196,181,253,0.8); line-height: 1.5;">Added structured XML sections, clear constraints, chain-of-thought instructions, and output format specification for better consistency.</p>
+              <div style="display: flex; gap: 4px; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 3px; padding: 3px 8px; background: rgba(39,39,42,0.8); border-radius: 4px; font-size: 9px; color: var(--text-3); cursor: pointer;">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                  Revert
+                </div>
+                <div style="display: flex; align-items: center; gap: 3px; padding: 3px 8px; background: rgba(52,211,153,0.15); border-radius: 4px; font-size: 9px; color: #34d399; cursor: pointer;">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Keep
+                </div>
+              </div>
+            </div>
+
+            <!-- Monaco Editor Mockup -->
+            <div style="padding: 8px 10px 10px;">
+              <div style="background: #27272a; border: 1px solid #3f3f46; border-radius: 8px; overflow: hidden; min-height: 340px;">
+                <!-- Editor Gutter + Content -->
+                <div style="display: flex; font-family: 'Fira Code', monospace; font-size: 12px; line-height: 1.9; padding: 12px 0;">
+                  <!-- Line Numbers -->
+                  <div style="width: 40px; text-align: right; padding-right: 12px; color: #52525b; user-select: none; flex-shrink: 0;">
+                    <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div>
+                  </div>
+                  <!-- Code Content -->
+                  <div style="flex: 1; padding-right: 16px; overflow: hidden;">
+                    <!-- Line 1: Role tag - emerald bold -->
+                    <div style="animation: log-line 0.15s ease 0.1s both;"><span style="color: #34d399; font-weight: bold;">&lt;persona&gt;</span></div>
+                    <!-- Line 2: Regular text -->
+                    <div style="animation: log-line 0.15s ease 0.15s both;"><span style="color: #d4d4d8;">You are a senior backend engineer specializing</span></div>
+                    <!-- Line 3: Text with bold -->
+                    <div style="animation: log-line 0.15s ease 0.2s both;"><span style="color: #d4d4d8;">in Go and </span><span style="color: #e4e4e7; font-weight: bold;">**distributed systems**</span><span style="color: #d4d4d8;">.</span></div>
+                    <!-- Line 4: Closing role tag -->
+                    <div style="animation: log-line 0.15s ease 0.25s both;"><span style="color: #34d399; font-weight: bold;">&lt;/persona&gt;</span></div>
+                    <!-- Line 5: Empty -->
+                    <div style="animation: log-line 0.15s ease 0.3s both;">&nbsp;</div>
+                    <!-- Line 6: Structural tag - cyan bold -->
+                    <div style="animation: log-line 0.15s ease 0.35s both;"><span style="color: #22d3ee; font-weight: bold;">&lt;instructions&gt;</span></div>
+                    <!-- Line 7: Keyword + text -->
+                    <div style="animation: log-line 0.15s ease 0.4s both;"><span style="color: #f87171; font-weight: bold;">IMPORTANT:</span><span style="color: #d4d4d8;"> Always write tests first.</span></div>
+                    <!-- Line 8: list item with template variable -->
+                    <div style="animation: log-line 0.15s ease 0.45s both;"><span style="color: #60a5fa;">-</span><span style="color: #d4d4d8;"> Use framework: </span><span style="color: #fbbf24; font-weight: bold;">{{framework}}</span></div>
+                    <!-- Line 9: list item -->
+                    <div style="animation: log-line 0.15s ease 0.5s both;"><span style="color: #60a5fa;">-</span><span style="color: #d4d4d8;"> Follow </span><span style="color: #e4e4e7; font-weight: bold;">**clean architecture**</span><span style="color: #d4d4d8;"> patterns</span></div>
+                    <!-- Line 10: Closing structural tag -->
+                    <div style="animation: log-line 0.15s ease 0.55s both;"><span style="color: #22d3ee; font-weight: bold;">&lt;/instructions&gt;</span></div>
+                    <!-- Line 11: Empty -->
+                    <div style="animation: log-line 0.15s ease 0.6s both;">&nbsp;</div>
+                    <!-- Line 12: Thinking tag - violet bold -->
+                    <div style="animation: log-line 0.15s ease 0.65s both;"><span style="color: #a78bfa; font-weight: bold;">&lt;thinking&gt;</span></div>
+                    <!-- Line 13: Content -->
+                    <div style="animation: log-line 0.15s ease 0.7s both;"><span style="color: #d4d4d8;">Reason step by step before writing code.</span></div>
+                    <!-- Line 14: Closing thinking tag -->
+                    <div style="animation: log-line 0.15s ease 0.75s both;"><span style="color: #a78bfa; font-weight: bold;">&lt;/thinking&gt;</span></div>
+                    <!-- Line 15: Empty -->
+                    <div style="animation: log-line 0.15s ease 0.8s both;">&nbsp;</div>
+                  </div>
+                </div>
+
+                <!-- Autocomplete Popup Overlay -->
+                <div style="position: relative;">
+                  <div style="position: absolute; bottom: 70px; left: 120px; background: #18181b; border: 1px solid #3f3f46; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); padding: 4px; min-width: 260px; z-index: 10; animation: fadeInUp 0.3s ease 1.2s both;">
+                    <!-- Autocomplete items -->
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 5px 10px; background: rgba(52,211,153,0.08); border-radius: 5px; margin-bottom: 2px;">
+                      <div style="width: 14px; height: 14px; background: #22d3ee; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #111; font-weight: bold;">S</div>
+                      <span style="font-size: 11px; color: var(--text-1); font-family: 'Fira Code', monospace;">constraints</span>
+                      <span style="font-size: 9px; color: var(--text-4); margin-left: auto;">[Structure]</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; margin-bottom: 2px;">
+                      <div style="width: 14px; height: 14px; background: #38bdf8; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #111; font-weight: bold;">C</div>
+                      <span style="font-size: 11px; color: var(--text-2); font-family: 'Fira Code', monospace;">context</span>
+                      <span style="font-size: 9px; color: var(--text-4); margin-left: auto;">[Context]</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px; margin-bottom: 2px;">
+                      <div style="width: 14px; height: 14px; background: #f472b6; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #111; font-weight: bold;">A</div>
+                      <span style="font-size: 11px; color: var(--text-2); font-family: 'Fira Code', monospace;">code</span>
+                      <span style="font-size: 9px; color: var(--text-4); margin-left: auto;">[Artifact]</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 5px;">
+                      <div style="width: 14px; height: 14px; background: #a78bfa; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #111; font-weight: bold;">T</div>
+                      <span style="font-size: 11px; color: var(--text-2); font-family: 'Fira Code', monospace;">chain-of-thought</span>
+                      <span style="font-size: 9px; color: var(--text-4); margin-left: auto;">[Pattern]</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Cursor blink on line 12 area -->
+                <div style="position: absolute; bottom: 140px; left: 272px; width: 2px; height: 16px; background: #34d399; animation: blink 1s step-end infinite;"></div>
+              </div>
+            </div>
+
+            <!-- Tag Legend -->
+            <div style="padding: 0 10px 10px; display: flex; gap: 6px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 4px; padding: 3px 8px; background: rgba(52,211,153,0.08); border-radius: 4px;">
+                <div style="width: 6px; height: 6px; border-radius: 2px; background: #34d399;"></div>
+                <span style="font-size: 9px; color: #34d399;">Role</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px; padding: 3px 8px; background: rgba(34,211,238,0.08); border-radius: 4px;">
+                <div style="width: 6px; height: 6px; border-radius: 2px; background: #22d3ee;"></div>
+                <span style="font-size: 9px; color: #22d3ee;">Structure</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px; padding: 3px 8px; background: rgba(56,189,248,0.08); border-radius: 4px;">
+                <div style="width: 6px; height: 6px; border-radius: 2px; background: #38bdf8;"></div>
+                <span style="font-size: 9px; color: #38bdf8;">Context</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px; padding: 3px 8px; background: rgba(251,191,36,0.08); border-radius: 4px;">
+                <div style="width: 6px; height: 6px; border-radius: 2px; background: #fbbf24;"></div>
+                <span style="font-size: 9px; color: #fbbf24;">Tool</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px; padding: 3px 8px; background: rgba(167,139,250,0.08); border-radius: 4px;">
+                <div style="width: 6px; height: 6px; border-radius: 2px; background: #a78bfa;"></div>
+                <span style="font-size: 9px; color: #a78bfa;">Thinking</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px; padding: 3px 8px; background: rgba(244,114,182,0.08); border-radius: 4px;">
+                <div style="width: 6px; height: 6px; border-radius: 2px; background: #f472b6;"></div>
+                <span style="font-size: 9px; color: #f472b6;">Artifact</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <h3>Custom Graph</h3>
-      <p>Draw your own execution flow on a visual canvas. Full control over which agents depend on others.</p>
+    </div>
+  </div>
+</section>
+<!-- ========== FEATURES GRID ========== -->
+<section id="all-features" style="padding: 80px 0 100px; background: linear-gradient(180deg, var(--bg-main) 0%, rgba(17,17,20,0.5) 50%, var(--bg-main) 100%);">
+  <div class="container">
+    <div class="reveal" style="text-align: center; margin-bottom: 60px;">
+      <div class="section-badge">Everything You Need</div>
+      <h2 class="section-title">Built for Power Users</h2>
+      <p class="section-subtitle" style="margin: 0 auto;">A complete toolkit for managing AI agent workflows at scale.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+      <!-- Feature 1: Agents -->
+      <div class="reveal delay-1" style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(96,165,250,0.2)';this.style.transform='translateY(-4px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(96,165,250,0.1); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="m2 14 6-6 6 6"/></svg>
+        </div>
+        <h3 class="font-display" style="font-size: 17px; font-weight: 700; color: var(--text-1); margin-bottom: 8px;">Custom Agents</h3>
+        <p style="font-size: 13px; color: var(--text-3); line-height: 1.6;">Create agents with specific models (Opus, Sonnet, Haiku), system prompts, tool permissions, and MCP server connections.</p>
+      </div>
+
+      <!-- Feature 2: Teams -->
+      <div class="reveal delay-2" style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(167,139,250,0.2)';this.style.transform='translateY(-4px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(167,139,250,0.1); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3 class="font-display" style="font-size: 17px; font-weight: 700; color: var(--text-1); margin-bottom: 8px;">Team Workflows</h3>
+        <p style="font-size: 13px; color: var(--text-3); line-height: 1.6;">Organize agents into teams with visual DAG editor. Parallel, sequential, or custom execution strategies.</p>
+      </div>
+
+      <!-- Feature 3: MCP -->
+      <div class="reveal delay-3" style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(52,211,153,0.2)';this.style.transform='translateY(-4px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(52,211,153,0.1); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+        </div>
+        <h3 class="font-display" style="font-size: 17px; font-weight: 700; color: var(--text-1); margin-bottom: 8px;">MCP Servers</h3>
+        <p style="font-size: 13px; color: var(--text-3); line-height: 1.6;">Connect to Model Context Protocol servers for extended tool capabilities. JSON editor with health checks and testing.</p>
+      </div>
+
+      <!-- Feature 4: Sessions -->
+      <div class="reveal delay-2" style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(251,191,36,0.2)';this.style.transform='translateY(-4px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(251,191,36,0.1); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div>
+        <h3 class="font-display" style="font-size: 17px; font-weight: 700; color: var(--text-1); margin-bottom: 8px;">Sessions & Tasks</h3>
+        <p style="font-size: 13px; color: var(--text-3); line-height: 1.6;">Create sessions with task queues, dependency graphs, retry policies, and automatic test execution after completion.</p>
+      </div>
+
+      <!-- Feature 5: Workspaces -->
+      <div class="reveal delay-3" style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(96,165,250,0.2)';this.style.transform='translateY(-4px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(96,165,250,0.1); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h3 class="font-display" style="font-size: 17px; font-weight: 700; color: var(--text-1); margin-bottom: 8px;">Project Workspaces</h3>
+        <p style="font-size: 13px; color: var(--text-3); line-height: 1.6;">Link GitHub repos, configure build/test commands, and manage CLAUDE.md context files for each workspace.</p>
+      </div>
+
+      <!-- Feature 6: Encrypted Vault -->
+      <div class="reveal delay-4" style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(248,113,113,0.2)';this.style.transform='translateY(-4px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(248,113,113,0.1); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h3 class="font-display" style="font-size: 17px; font-weight: 700; color: var(--text-1); margin-bottom: 8px;">Encrypted Vault</h3>
+        <p style="font-size: 13px; color: var(--text-3); line-height: 1.6;">Store API keys and environment variables securely with AES-256 encryption. Injected at runtime, never exposed.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ========== TECH STACK ========== -->
+<section id="tech" style="padding: 80px 0 60px;">
+  <div class="container">
+    <div class="reveal" style="text-align: center; margin-bottom: 48px;">
+      <div class="section-badge">Tech Stack</div>
+      <h2 class="section-title">Built With Modern Tools</h2>
+    </div>
+
+    <div class="reveal delay-2" style="display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;">
+      <!-- Go -->
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 28px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(96,165,250,0.2)';this.style.transform='translateY(-3px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="font-size: 28px; font-weight: 800; color: #00ADD8; font-family: 'Fira Code', monospace;">Go</div>
+        <div style="font-size: 11px; color: var(--text-4);">Backend</div>
+      </div>
+      <!-- Wails -->
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 28px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(167,139,250,0.2)';this.style.transform='translateY(-3px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="font-size: 28px; font-weight: 800; color: #DA3A34; font-family: 'Fira Code', monospace;">W</div>
+        <div style="font-size: 11px; color: var(--text-4);">Wails v2</div>
+      </div>
+      <!-- React -->
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 28px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(96,165,250,0.2)';this.style.transform='translateY(-3px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="font-size: 28px; font-weight: 800; color: #61DAFB; font-family: 'Fira Code', monospace;">R</div>
+        <div style="font-size: 11px; color: var(--text-4);">React 18</div>
+      </div>
+      <!-- TypeScript -->
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 28px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(96,165,250,0.2)';this.style.transform='translateY(-3px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="font-size: 28px; font-weight: 800; color: #3178C6; font-family: 'Fira Code', monospace;">TS</div>
+        <div style="font-size: 11px; color: var(--text-4);">TypeScript</div>
+      </div>
+      <!-- Tailwind -->
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 28px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(96,165,250,0.2)';this.style.transform='translateY(-3px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="font-size: 28px; font-weight: 800; color: #06B6D4; font-family: 'Fira Code', monospace;">Tw</div>
+        <div style="font-size: 11px; color: var(--text-4);">Tailwind CSS</div>
+      </div>
+      <!-- Zustand -->
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 28px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(96,165,250,0.2)';this.style.transform='translateY(-3px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="font-size: 28px;">&#128059;</div>
+        <div style="font-size: 11px; color: var(--text-4);">Zustand</div>
+      </div>
+      <!-- ReactFlow -->
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 28px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(96,165,250,0.2)';this.style.transform='translateY(-3px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="font-size: 28px; font-weight: 800; color: #FF0072; font-family: 'Fira Code', monospace;">RF</div>
+        <div style="font-size: 11px; color: var(--text-4);">ReactFlow</div>
+      </div>
+      <!-- SQLite -->
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 28px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.3s, transform 0.3s;" onmouseenter="this.style.borderColor='rgba(96,165,250,0.2)';this.style.transform='translateY(-3px)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.06)';this.style.transform='translateY(0)'">
+        <div style="font-size: 28px; font-weight: 800; color: #003B57; font-family: 'Fira Code', monospace;">SQ</div>
+        <div style="font-size: 11px; color: var(--text-4);">SQLite</div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ========== WORKFLOW STEPS ========== -->
+<section style="padding: 60px 0 80px;">
+  <div class="container">
+    <div class="reveal" style="text-align: center; margin-bottom: 48px;">
+      <div class="section-badge">How It Works</div>
+      <h2 class="section-title">4 Steps to AI-Powered Development</h2>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; position: relative;">
+      <!-- Connecting line -->
+      <div style="position: absolute; top: 40px; left: 12.5%; right: 12.5%; height: 2px; background: linear-gradient(90deg, var(--brand-blue), var(--brand-purple)); opacity: 0.2; z-index: 0;"></div>
+
+      <div class="reveal delay-1" style="text-align: center; position: relative; z-index: 1;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--brand-gradient-subtle); border: 1px solid rgba(96,165,250,0.2); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-family: 'Nunito', sans-serif; font-size: 24px; font-weight: 800; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">1</div>
+        <h4 class="font-display" style="font-size: 15px; font-weight: 700; color: var(--text-1); margin-bottom: 6px;">Add Workspace</h4>
+        <p style="font-size: 12px; color: var(--text-3); line-height: 1.6;">Link your project repository and configure build/test commands</p>
+      </div>
+
+      <div class="reveal delay-2" style="text-align: center; position: relative; z-index: 1;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--brand-gradient-subtle); border: 1px solid rgba(96,165,250,0.2); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-family: 'Nunito', sans-serif; font-size: 24px; font-weight: 800; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">2</div>
+        <h4 class="font-display" style="font-size: 15px; font-weight: 700; color: var(--text-1); margin-bottom: 6px;">Create Agents</h4>
+        <p style="font-size: 12px; color: var(--text-3); line-height: 1.6;">Build specialized agents with models, prompts, and tool permissions</p>
+      </div>
+
+      <div class="reveal delay-3" style="text-align: center; position: relative; z-index: 1;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--brand-gradient-subtle); border: 1px solid rgba(96,165,250,0.2); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-family: 'Nunito', sans-serif; font-size: 24px; font-weight: 800; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">3</div>
+        <h4 class="font-display" style="font-size: 15px; font-weight: 700; color: var(--text-1); margin-bottom: 6px;">Build Teams</h4>
+        <p style="font-size: 12px; color: var(--text-3); line-height: 1.6;">Organize agents into teams with visual DAG workflows</p>
+      </div>
+
+      <div class="reveal delay-4" style="text-align: center; position: relative; z-index: 1;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--brand-gradient-subtle); border: 1px solid rgba(96,165,250,0.2); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-family: 'Nunito', sans-serif; font-size: 24px; font-weight: 800; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">4</div>
+        <h4 class="font-display" style="font-size: 15px; font-weight: 700; color: var(--text-1); margin-bottom: 6px;">Launch Session</h4>
+        <p style="font-size: 12px; color: var(--text-3); line-height: 1.6;">Plan tasks with AI, execute, and monitor everything in real-time</p>
+      </div>
     </div>
   </div>
 </section>
 
-<div class="divider"></div>
+<!-- ========== CTA ========== -->
+<section style="padding: 80px 0 100px;">
+  <div class="container">
+    <div class="reveal" style="text-align: center; padding: 60px 40px; background: var(--brand-gradient-subtle); border: 1px solid rgba(96,165,250,0.15); border-radius: 24px; position: relative; overflow: hidden;">
+      <!-- Background glow -->
+      <div style="position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 400px; height: 400px; background: radial-gradient(circle, rgba(96,165,250,0.08) 0%, transparent 70%); pointer-events: none;"></div>
 
-<!-- ═══════ TECH STACK ═══════ -->
-<section class="section section-sm section-center" id="stack">
-  <span class="section-label reveal">Built with</span>
-  <h2 class="section-title reveal reveal-d1">Tech stack</h2>
+      <div style="position: relative; z-index: 1;">
+        <svg viewBox="0 0 512 512" width="56" height="56" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 24px; filter: drop-shadow(0 0 20px rgba(96,165,250,0.3));">
+          <defs><linearGradient id="g3" x1="56" y1="456" x2="456" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+          <rect x="72" y="72" width="368" height="368" rx="60" fill="url(#g3)" opacity="0.12"/><rect x="72" y="72" width="368" height="368" rx="60" stroke="url(#g3)" stroke-width="6" fill="none" opacity="0.35"/>
+          <g transform="translate(256, 256)"><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g3)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g3)" transform="rotate(60)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g3)" transform="rotate(120)"/></g>
+        </svg>
 
-  <div class="stack-grid reveal reveal-d2">
-    <div class="stack-pill"><div class="stack-dot" style="background:#00ADD8;"></div>Go 1.23</div>
-    <div class="stack-pill"><div class="stack-dot" style="background:#61DAFB;"></div>React 18</div>
-    <div class="stack-pill"><div class="stack-dot" style="background:#3178C6;"></div>TypeScript</div>
-    <div class="stack-pill"><div class="stack-dot" style="background:#E34F26;"></div>Wails v2</div>
-    <div class="stack-pill"><div class="stack-dot" style="background:#38BDF8;"></div>Tailwind CSS</div>
-    <div class="stack-pill"><div class="stack-dot" style="background:#007ACC;"></div>Monaco Editor</div>
-    <div class="stack-pill"><div class="stack-dot" style="background:#FF6B6B;"></div>React Flow</div>
-    <div class="stack-pill"><div class="stack-dot" style="background:#F59E0B;"></div>SQLite</div>
-    <div class="stack-pill"><div class="stack-dot" style="background:#764ABC;"></div>Zustand</div>
-    <div class="stack-pill"><div class="stack-dot" style="background:var(--purple);"></div>Claude Code CLI</div>
+        <h2 class="font-display" style="font-size: 36px; font-weight: 800; color: var(--text-1); margin-bottom: 12px;">Ready to Orchestrate?</h2>
+        <p style="font-size: 16px; color: var(--text-3); max-width: 480px; margin: 0 auto 32px; line-height: 1.7;">
+          Start managing your AI agent workflows with Shannon. Open source, local-first, and built for developers.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+          <a href="#" class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Shannon
+          </a>
+          <a href="#" class="btn-secondary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+            Star on GitHub
+          </a>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
-<div class="divider"></div>
-
-<!-- ═══════ CTA ═══════ -->
-<section class="cta-section">
-  <div class="orb" style="width:500px;height:400px;background:radial-gradient(circle,rgba(167,139,250,0.06),transparent 70%);top:-50px;left:50%;transform:translateX(-50%);"></div>
-
-  <span class="section-label reveal">Get started</span>
-  <h2 class="section-title reveal reveal-d1" style="position:relative;z-index:1;">Clone, build, orchestrate.</h2>
-  <p class="section-desc reveal reveal-d2" style="margin:0 auto 24px;position:relative;z-index:1;">
-    Shannon requires <a href="https://docs.anthropic.com/en/docs/claude-code" style="color:var(--blue);text-decoration:none;">Claude Code CLI</a> and <a href="https://wails.io" style="color:var(--blue);text-decoration:none;">Wails v2</a> installed on your machine.
-  </p>
-
-  <div class="cta-code reveal reveal-d3">
-    <span class="dim">$</span> git clone <span class="acc">https://github.com/yourusername/shannon.git</span><br/>
-    <span class="dim">$</span> <span class="hl">cd</span> shannon/frontend && npm install && <span class="hl">cd</span> ..<br/>
-    <span class="dim">$</span> <span class="hl">wails dev</span>
+<!-- ========== FOOTER ========== -->
+<footer style="padding: 32px 0; border-top: 1px solid var(--border);">
+  <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <svg viewBox="0 0 512 512" width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="g4" x1="56" y1="456" x2="456" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+        <rect x="72" y="72" width="368" height="368" rx="60" fill="url(#g4)" opacity="0.12"/><rect x="72" y="72" width="368" height="368" rx="60" stroke="url(#g4)" stroke-width="6" fill="none" opacity="0.35"/>
+        <g transform="translate(256, 256)"><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g4)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g4)" transform="rotate(60)"/><rect x="-18" y="-56" width="36" height="112" rx="18" fill="url(#g4)" transform="rotate(120)"/></g>
+      </svg>
+      <span class="font-display" style="font-size: 14px; font-weight: 700; color: var(--text-2);">Shannon</span>
+      <span style="font-size: 11px; color: var(--text-4);">for Claude Code</span>
+    </div>
+    <div style="font-size: 12px; color: var(--text-4);">
+      Built with Go + Wails + React &middot; Powered by Claude
+    </div>
   </div>
-
-  <p class="reveal reveal-d4" style="margin-top:28px;font-size:13px;color:var(--text4);position:relative;z-index:1;">
-    This is a hobby project. Built for personal use, shared in case others find it useful.
-  </p>
-</section>
-
-<!-- ═══════ FOOTER ═══════ -->
-<footer>
-  <p>
-    <strong>Shannon</strong> &mdash; named after <a href="https://en.wikipedia.org/wiki/Claude_Shannon">Claude Shannon</a>, the father of information theory.
-    <br/>Built with curiosity and too many Claude API calls.
-  </p>
 </footer>
 
-<!-- ═══════ SCROLL REVEAL ═══════ -->
+<!-- ========== SCROLL REVEAL SCRIPT ========== -->
 <script>
+// Intersection Observer for scroll animations
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
       entry.target.classList.add('visible');
     }
   });
-}, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+}, {
+  threshold: 0.1,
+  rootMargin: '0px 0px -50px 0px'
+});
 
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+document.querySelectorAll('.reveal, .reveal-left, .reveal-right').forEach(el => {
+  observer.observe(el);
+});
+
+// Smooth scroll for nav links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function(e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+
+// Parallax effect on mockup frames
+window.addEventListener('scroll', () => {
+  const scrolled = window.pageYOffset;
+  document.querySelectorAll('.mockup-frame').forEach(frame => {
+    const rect = frame.getBoundingClientRect();
+    const center = rect.top + rect.height / 2;
+    const viewCenter = window.innerHeight / 2;
+    const offset = (center - viewCenter) * 0.02;
+    frame.style.transform = `translateY(${offset}px)`;
+  });
+});
 </script>
 
 </body>
