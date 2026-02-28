@@ -274,8 +274,8 @@ func (ar *AgentRunner) RunTask(ctx context.Context, task *models.Task, agent *mo
 		// Capture result text via lastText — avoid writing directly to task struct
 		// to prevent data races. Callers apply ResultText from RunResult.LastText.
 		if event.Type == "result" {
-			if event.Result != "" {
-				lastText = event.Result
+			if text := event.ResultText(); text != "" {
+				lastText = text
 			}
 		}
 	}
@@ -438,7 +438,7 @@ func (ar *AgentRunner) emitTaskEvent(taskID string, event claude.StreamEvent) {
 		}
 	case "result":
 		taskEvent.Type = "result"
-		taskEvent.Content = event.Result
+		taskEvent.Content = event.ResultText()
 		taskEvent.Data = map[string]any{
 			"duration_ms": event.DurationMS,
 			"num_turns":   event.NumTurns,

@@ -44,7 +44,7 @@ func ExtractTextContent(event StreamEvent) string {
 			return extractFromContent(event.Message.Content)
 		}
 	case "result":
-		return event.Result
+		return event.ResultText()
 	case "raw":
 		return string(event.Raw)
 	}

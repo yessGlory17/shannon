@@ -107,8 +107,8 @@ func StartProcess(ctx context.Context, opts ProcessOptions) (*Process, error) {
 
 	// Parse stdout stream events in background
 	go func() {
-		defer close(p.events)
 		defer close(p.done)
+		defer close(p.events)
 
 		log.Printf("[claude] starting stream parser")
 

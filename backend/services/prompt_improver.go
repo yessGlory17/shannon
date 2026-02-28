@@ -97,7 +97,7 @@ Return the improved prompt and explanation.`, metaContext, draft)
 	for event := range proc.Events() {
 		switch event.Type {
 		case "result":
-			resultJSON = event.Result
+			resultJSON = event.ResultText()
 		case "assistant":
 			text := claude.ExtractTextContent(event)
 			if text != "" {
