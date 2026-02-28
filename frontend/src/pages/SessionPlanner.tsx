@@ -36,6 +36,7 @@ export function SessionPlanner() {
   const [planning, setPlanning] = useState(false)
   const [proposedTasks, setProposedTasks] = useState<ProposedTask[]>([])
   const [planSummary, setPlanSummary] = useState('')
+  const [planError, setPlanError] = useState('')
 
   const [expandedTask, setExpandedTask] = useState<string | null>(null)
 
@@ -133,12 +134,14 @@ export function SessionPlanner() {
     setPlanning(true)
     setProposedTasks([])
     setPlanSummary('')
+    setPlanError('')
     try {
       const result = await window.go.main.App.PlanTasks(currentSession.project_id, goal.trim())
       setProposedTasks(result.tasks || [])
       setPlanSummary(result.summary || '')
-    } catch (e) {
+    } catch (e: any) {
       console.error('Planning failed:', e)
+      setPlanError(e?.message || String(e) || 'Planning failed')
     } finally {
       setPlanning(false)
     }
@@ -290,6 +293,11 @@ export function SessionPlanner() {
                 rows={3}
                 className="w-full px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 input-focus resize-none transition-colors"
               />
+              {planError && (
+                <div className="mt-3 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <p className="text-xs text-red-400">{planError}</p>
+                </div>
+              )}
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={handlePlan}

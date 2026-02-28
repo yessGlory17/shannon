@@ -16,12 +16,32 @@ type StreamEvent struct {
 	Message *Message `json:"message,omitempty"`
 
 	// For result events
-	DurationMS float64 `json:"duration_ms,omitempty"`
-	NumTurns   int     `json:"num_turns,omitempty"`
-	Result     string  `json:"result,omitempty"`
+	DurationMS       float64         `json:"duration_ms,omitempty"`
+	NumTurns         int             `json:"num_turns,omitempty"`
+	Result           json.RawMessage `json:"result,omitempty"`
+	StructuredOutput json.RawMessage `json:"structured_output,omitempty"` // --json-schema validated output
 
 	// Raw JSON for anything we don't parse
 	Raw json.RawMessage `json:"-"`
+}
+
+// ResultText returns the result as a usable string.
+// Priority: structured_output (from --json-schema) > result field.
+// If the value is a JSON string, it unwraps the quotes.
+// If it's a JSON object/array, it returns the raw JSON.
+func (e StreamEvent) ResultText() string {
+	// Prefer structured_output when available (--json-schema validated output)
+	if len(e.StructuredOutput) > 0 {
+		return string(e.StructuredOutput)
+	}
+	if len(e.Result) == 0 {
+		return ""
+	}
+	var s string
+	if err := json.Unmarshal(e.Result, &s); err == nil {
+		return s
+	}
+	return string(e.Result)
 }
 
 // Message represents a Claude message within a stream event.

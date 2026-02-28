@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -105,7 +106,9 @@ Rules:
 - If a task depends on another, specify the dependency by title
 - Each task prompt should be detailed enough for an AI agent to execute without additional context
 - Keep task count between 2-8 tasks
-%s`, goal, agentInfo, agentRule)
+%s
+IMPORTANT: You MUST respond with ONLY a valid JSON object, no other text. The JSON must follow this exact structure:
+{"summary": "Brief description of the overall plan", "tasks": [{"title": "Short task title", "prompt": "Detailed prompt for the agent", "dependencies": ["titles of dependent tasks"], "agent_id": "ID of assigned agent"}]}`, goal, agentInfo, agentRule)
 
 	proc, err := claude.StartProcess(ctx, claude.ProcessOptions{
 		WorkDir:     projectPath,
@@ -122,10 +125,14 @@ Rules:
 	// Collect all output. With --json-schema, the result event contains validated JSON.
 	var resultJSON string
 	var assistantText strings.Builder
+	eventCount := 0
 	for event := range proc.Events() {
+		eventCount++
+		log.Printf("[planner] event #%d: type=%s subtype=%s resultLen=%d structuredOutputLen=%d", eventCount, event.Type, event.Subtype, len(event.Result), len(event.StructuredOutput))
 		switch event.Type {
 		case "result":
-			resultJSON = event.Result
+			resultJSON = event.ResultText()
+			log.Printf("[planner] captured result (len=%d): %.200s", len(resultJSON), resultJSON)
 		case "assistant":
 			text := claude.ExtractTextContent(event)
 			if text != "" {
@@ -136,16 +143,40 @@ Rules:
 
 	<-proc.Done()
 
-	// Primary path: parse the result event (validated by --json-schema)
+	log.Printf("[planner] stream ended: %d events, resultJSON len=%d, assistantText len=%d", eventCount, len(resultJSON), assistantText.Len())
+
+	// Try multiple strategies to extract the JSON result.
 	raw := resultJSON
-	if raw == "" {
-		// Fallback: try assistant text with brace-depth extraction
-		raw = extractJSON(assistantText.String())
-	}
 
 	var result PlanResult
-	if err := json.Unmarshal([]byte(raw), &result); err != nil {
-		return nil, fmt.Errorf("parse planner response: %w (raw: %s)", err, truncate(raw, 500))
+	parsed := false
+
+	// Strategy 1: Direct parse of result event
+	if raw != "" {
+		if err := json.Unmarshal([]byte(raw), &result); err == nil {
+			parsed = true
+			log.Printf("[planner] parsed result directly (len=%d)", len(raw))
+		} else {
+			log.Printf("[planner] direct parse failed: %v, trying extractJSON on result", err)
+			// Strategy 2: Extract JSON from result text (model may have mixed text + JSON)
+			extracted := extractJSON(raw)
+			if extracted != raw {
+				if err := json.Unmarshal([]byte(extracted), &result); err == nil {
+					parsed = true
+					log.Printf("[planner] parsed result via extractJSON (len=%d)", len(extracted))
+				}
+			}
+		}
+	}
+
+	// Strategy 3: Extract JSON from assistant text
+	if !parsed {
+		raw = extractJSON(assistantText.String())
+		log.Printf("[planner] trying assistantText extractJSON (len=%d): %.200s", len(raw), raw)
+		if err := json.Unmarshal([]byte(raw), &result); err != nil {
+			log.Printf("[planner] all parse strategies failed: %v", err)
+			return nil, fmt.Errorf("parse planner response: %w (raw: %s)", err, truncate(raw, 500))
+		}
 	}
 
 	if len(result.Tasks) == 0 {
